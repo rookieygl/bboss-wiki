@@ -1,0 +1,8 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+# Created by .ignore support plugin (hsz.mobi)
+/.gitignore
+/.idea
+/.git
+/target
+/bboss-wiki.iml

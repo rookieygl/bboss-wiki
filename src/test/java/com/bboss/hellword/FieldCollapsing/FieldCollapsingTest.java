@@ -1,0 +1,284 @@
+package com.bboss.hellword.FieldCollapsing;
+
+import com.bboss.hellword.FunctionScore.FunctionScoreTest;
+import com.bboss.hellword.po.Item;
+import com.bboss.hellword.po.RecipesPo;
+import com.frameworkset.orm.annotation.ESMetaInnerHits;
+import org.apache.commons.beanutils.BeanUtils;
+import org.frameworkset.elasticsearch.ElasticSearchHelper;
+import org.frameworkset.elasticsearch.boot.BBossESStarter;
+import org.frameworkset.elasticsearch.client.ClientInterface;
+import org.frameworkset.elasticsearch.client.ClientOptions;
+import org.frameworkset.elasticsearch.client.RestClientUtil;
+import org.frameworkset.elasticsearch.client.ResultUtil;
+import org.frameworkset.elasticsearch.entity.ESDatas;
+import org.frameworkset.elasticsearch.entity.MapRestResponse;
+import org.frameworkset.elasticsearch.serial.ESInnerHitSerialThreadLocal;
+import org.frameworkset.elasticsearch.serial.ESTypeReference;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@SpringBootTest
+@RunWith(SpringRunner.class)
+public class FieldCollapsingTest {
+
+    @Autowired
+    //bboss依赖
+    private BBossESStarter bbossESStarter;
+
+    //索引名称
+    private String recipesPoIndiceName = "recipes";
+    //日志
+    private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);
+
+    /**
+     * 创建菜谱索引
+     */
+    @Test
+    public void dropAndRecipesIndice() {
+
+        ClientInterface clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
+        if (clientInterface.existIndice(recipesPoIndiceName)) {
+            clientInterface.dropIndice(recipesPoIndiceName);
+        }
+        clientInterface.createIndiceMapping(recipesPoIndiceName, "createRecipesIndice");
+    }
+
+    /**
+     * 添加菜品数据
+     */
+    @Test
+    public void insertRecipesData() {
+        ClientInterface clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
+        List<RecipesPo> recipesPoList = new ArrayList<>();
+        RecipesPo recipesPo = new RecipesPo();
+        RecipesPo recipesPo1 = new RecipesPo();
+
+        recipesPo.setName("清蒸鱼头");
+        recipesPo.setRating(3);
+        recipesPo.setType("湘菜");
+
+        recipesPo1.setName("鱼香肉丝");
+        recipesPo1.setRating(5);
+        recipesPo1.setType("川菜");
+
+        //配置索引参数
+        ClientOptions clientOptions = new ClientOptions();
+        clientOptions.setRefreshOption("refresh=true");
+        //String response = clientInterface.addDocuments(recipesPoIndiceName, );insertRecipesData
+        clientInterface.executeHttp("_bulk", "insertRecipesData", ClientInterface.HTTP_POST);
+        //System.out.println(response);
+    }
+
+    /**
+     * 关键词查询
+     */
+    @Test
+    public void testQueryRecipesPoByField() {
+        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        Map<String, Object> queryMap = new HashMap<>();
+        //查询条件
+        queryMap.put("recipeName", "鱼");
+
+        //设置分页
+        queryMap.put("from", 0);
+        queryMap.put("size", 5);
+
+        //testFieldValueFactor 就是上文定义的dsl模板名，queryMap 为查询条件，Item为实体类
+        ESDatas<RecipesPo> esDatast = clientInterface.searchList("recipes/_search?search_type=dfs_query_then_fetch", "testQueryByField", queryMap, RecipesPo.class);
+        List<RecipesPo> esRecipesPoList = esDatast.getDatas();
+        logger.debug(esRecipesPoList.toString());
+        System.out.println(esRecipesPoList.toString());
+    }
+
+    /**
+     * 关键词查询,加入字段排序
+     */
+    @Test
+    public void testSortRecipesPoByField() {
+        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        Map<String, Object> queryMap = new HashMap<>();
+        //查询条件
+        queryMap.put("recipeName", "鱼");
+        queryMap.put("sortField", "rating");
+
+        //设置分页
+        queryMap.put("from", 0);
+        queryMap.put("size", 5);
+
+        //testFieldValueFactor 就是上文定义的dsl模板名，queryMap 为查询条件，Item为实体类
+        ESDatas<RecipesPo> esDatast = clientInterface.searchList("recipes/_search?search_type=dfs_query_then_fetch", "testSortField", queryMap, RecipesPo.class);
+        List<RecipesPo> esRecipesPoList = esDatast.getDatas();
+        logger.debug(esRecipesPoList.toString());
+        System.out.println(esRecipesPoList.toString());
+    }
+
+    /**
+     * 查询所有菜系打分最高的鱼食材菜品，返回结果按照打分排序
+     */
+    @Test
+    public void testQueryRecipesPoAllType() {
+        ClientInterface clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
+        Map<String, Object> queryMap = new HashMap<>();
+        //查询条件
+        queryMap.put("recipeName", "鱼");
+        queryMap.put("sortField", "rating");
+
+        //聚合参数
+        String typeAggName = "all_type";
+        String typeTopAggName = "recipes_top";
+        queryMap.put("typeAggName", typeAggName);
+        queryMap.put("typeTopAggName", typeTopAggName);
+        queryMap.put("topHitsSortField", "rating");
+        queryMap.put("topHitsSzie", 2);
+
+        //设置分页
+        queryMap.put("from", 0);
+        //不能设置size，会返回多余数据
+        queryMap.put("size", 0);
+
+        //通过下面的方法先得到查询的json报文，然后再通过MapRestResponse查询遍历结果
+        MapRestResponse restResponse = clientInterface.search("recipes/_search?search_type=dfs_query_then_fetch", "testQueryAllType", queryMap);
+
+        //获取聚合桶,一次聚合只要一个桶,从桶中获取聚合信息和元数据
+        List<Map<String, Object>> recipesAggs = restResponse.getAggBuckets(typeAggName, new ESTypeReference<List<Map<String, Object>>>() {
+        });
+
+        //获取失败数和成功数
+        Integer doc_count_error_upper_bound = restResponse.getAggAttribute(typeAggName, "doc_count_error_upper_bound", Integer.class);
+        Integer sum_other_doc_count = restResponse.getAggAttribute(typeAggName, "sum_other_doc_count", Integer.class);
+        System.out.println("doc_count_error_upper_bound:" + doc_count_error_upper_bound);
+        System.out.println("sum_other_doc_count:" + sum_other_doc_count);
+
+        //取出元数据
+        recipesAggs.forEach(typeAggBucketsMap -> {
+            //菜系名
+            String recipesAggName = (String) typeAggBucketsMap.get("key");
+            System.out.println("菜系名recipesAggName: " + recipesAggName);
+            //菜系总数
+            Integer recipesAggTotalSize = (Integer) typeAggBucketsMap.get("doc_count");
+            //System.out.println("recipesAggTotalSize: " + recipesAggTotalSize);
+            //解析json 获取菜品
+            Map<String, ?> recipesTypeAggBucketsMap = (Map<String, ?>) typeAggBucketsMap.get(typeTopAggName);
+            Map<String, ?> recipesRatedHitsMap = (Map<String, ?>) recipesTypeAggBucketsMap.get("hits");
+            List<Map<String, ?>> recipesTophitsList = (List<Map<String, ?>>) recipesRatedHitsMap.get("hits");
+            recipesTophitsList.forEach(recipePoMap -> {
+                Map<String, Object> recipeMap = (Map<String, Object>) recipePoMap.get("_source");
+                RecipesPo recipesPo = transMap2Bean2(recipeMap, RecipesPo.class);
+                System.out.println(recipesPo.toString());
+            });
+        });
+    }
+
+    public static <T> T transMap2Bean2(Map<String, Object> beanMap, Class<T> clz) {
+        //创建JavaBean对象
+        //获取指定类的BeanInfo对象
+        T poFromMap = null;
+        BeanInfo beanInfo = null;
+
+        try {
+            poFromMap = clz.newInstance();
+            beanInfo = Introspector.getBeanInfo(clz, Object.class);
+            //获取所有的属性描述器
+            PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+            for (PropertyDescriptor pd : pds) {
+                Object value = beanMap.get(pd.getName());
+                Method setter = pd.getWriteMethod();
+                setter.invoke(poFromMap, value);
+            }
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (IntrospectionException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return poFromMap;
+    }
+
+    /**
+     * 字段折叠
+     */
+    @Test
+    public void testFieldCollapsing() {
+        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        Map<String, Object> queryMap = new HashMap<>();
+        //查询条件
+        queryMap.put("recipeName", "鱼");
+
+        //字段折叠(field_collapsing)参数
+        queryMap.put("collapseField", "type");
+        queryMap.put("sortField", "rating");
+        //设置分页
+        queryMap.put("from", 0);
+        queryMap.put("size", 10);
+
+        //testFieldValueFactor 就是上文定义的dsl模板名，queryMap 为查询条件，Item为实体类
+        ESDatas<RecipesPo> esDatast = clientInterface.searchList("recipes/_search?search_type=dfs_query_then_fetch", "testFieldCollapsing", queryMap, RecipesPo.class);
+        List<RecipesPo> esRecipesPoList = esDatast.getDatas();
+        logger.debug(esRecipesPoList.toString());
+        System.out.println(esRecipesPoList.toString());
+    }
+
+    /**
+     * 字段折叠 控制组内数据
+     */
+    @Test
+    public void testFieldCollapsingInnerHits() {
+        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        Map<String, Object> queryMap = new HashMap<>();
+        //查询条件
+        queryMap.put("recipeName", "鱼");
+        queryMap.put("sortField", "rating");
+
+        //字段折叠(field_collapsing)参数
+        queryMap.put("collapseField", "type");
+        queryMap.put("innerHitsName", "sort_rated");
+
+        //innerHits参数
+        String collapseInnerHitsName = "sort_rated";
+        queryMap.put("typeInnerHitsName", collapseInnerHitsName);
+        queryMap.put("typeInnerHitsSize", 2);
+        queryMap.put("collapseSortField", "rating");
+
+        //设置分页
+        queryMap.put("from", 0);
+        queryMap.put("size", 10);
+
+        try {
+            ESInnerHitSerialThreadLocal.setESInnerTypeReferences(RecipesPo.class);
+            ESDatas<RecipesPo> esDatast = clientInterface.searchList("recipes/_search?search_type=dfs_query_then_fetch", "testFieldCollapsingInnerHits", queryMap, RecipesPo.class);
+            List<RecipesPo> recipesPoList = esDatast.getDatas();
+            recipesPoList.forEach(recipesPo -> {
+                List innerHitsRecipesPoList = ResultUtil.getInnerHits(recipesPo.getInnerHitsRecipesPo(), collapseInnerHitsName);
+                if (innerHitsRecipesPoList != null && innerHitsRecipesPoList.size() > 0) {
+                    innerHitsRecipesPoList.forEach(innerHitsRecipesPo -> {
+                        System.out.println(innerHitsRecipesPo.toString());
+                    });
+                }
+            });
+        } finally {
+            //清除缓存
+            ESInnerHitSerialThreadLocal.clean();
+        }
+
+    }
+}

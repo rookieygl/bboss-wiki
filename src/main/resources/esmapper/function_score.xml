@@ -1,0 +1,351 @@
+<properties>
+
+    <!-- 通过function_score函数计算相关度打分案例 -->
+    <!--创建学生索引Student  mapping dsl-->
+    <property name="createStudentIndice">
+        <![CDATA[{
+            "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "index.refresh_interval": "5s"
+            },
+            "mappings": {
+              "student" : {
+                "properties" : {
+                  ## 参与field_value_factor或者gauss运算等，字符类型只能是number
+                  "age" : {
+                    "type" : "long"
+                  },
+                  "city" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "creat_date" : {
+                    "type" : "date"
+                  },
+                  "docId" : {
+                    "type" : "long"
+                  },
+                  "name" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "phone" : {
+                    "type" : "long"
+                  }
+                }
+              }
+            }
+        }]]>
+    </property>
+
+    <!--
+     通过function_score函数计算相关度打分案例
+     参考文档
+     https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html
+    -->
+    <!--
+    创建商品索引items mappings dsl
+    -->
+    <property name="createItemsIndice">
+        <![CDATA[{
+            "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "index.refresh_interval": "5s"
+            },
+            "mappings" : {
+                "item" : {
+                    "properties" : {
+                        "docId" : {
+                            "type" : "long"
+                        },
+                        "name" : {
+                            "type" : "text",
+                            "fields" : {
+                              "keyword" : {
+                                "type" : "keyword",
+                                "ignore_above" : 256
+                              }
+                            }
+                        },
+                        "sales" : {
+                            "type" : "long"
+                        },
+                        "title" : {
+                            "type" : "text",
+                            "fields" : {
+                              "keyword" : {
+                                "type" : "keyword",
+                                "ignore_above" : 256
+                              }
+                            }
+                        }
+                    }
+                }
+            }
+        }]]>
+    </property>
+
+    <!--指定sales字段排序-->
+    <property name="testFieldValueFactor">
+        <![CDATA[
+        {
+           ## 配合过滤器使用，文档与查询次相关字数多的的
+           "explain": true,
+            "query": {
+                "function_score": {
+                    "query": {
+                        "match": {
+                            "title": #[titleName]
+                        }
+                    },
+                    "field_value_factor": {
+						## 指定需要打分的字段
+                        "field": #[valueFactorName],
+						## 排序评分函数
+                        "modifier": "log1p",
+                        "factor": 0.1
+                    },
+
+					## 与文档评分的组合方式
+                    "boost_mode": "sum"
+                }
+            },
+            "from": #[from],
+            "size": #[size]
+        }
+        ]]>
+    </property>
+
+    <!--测试random_score-->
+    <property name="testRanodmScore">
+        <![CDATA[
+        {
+            "query": {
+                "function_score": {
+                    "random_score": {
+                        "field": #[fieldName],
+   						"seed": 10
+                    }
+                }
+            },
+            "from": #[from],
+            "size": #[size]
+        }
+        ]]>
+    </property>
+
+    <!--测试decayfunctions 地理类型-->
+    <property name="testDecayFunctionsByGeoPonit">
+        <![CDATA[
+            {
+                "explain": false,
+                "query": {
+                    "function_score": {
+                    "query": {
+                        "match": {
+                          "title": #[titleName]
+                        }
+                    },
+                    "gauss": {
+                        "location": {
+                            "origin": #[originLocation],
+                            "offset": #[offset],
+                            "scale": #[scale],
+                            "decay": #[decay]
+                            }
+                        },
+                    "boost_mode": "sum"
+                    }
+                },
+                "from": #[from],
+                "size": #[size]
+            }
+        ]]>
+    </property>
+
+    <!--测试script_score-->
+    <property name="testScriptScore">
+        <![CDATA[
+        {
+            "explain": false,
+            "query": {
+                "function_score": {
+                    "query": {
+                      "match": {
+                        "city": #[cityName]
+                      }
+                    },
+                    "script_score": {
+                      "script": "return doc ['school.keyword'].value == '#[schoolName,quoted=false]' ? 10 : 1.0"
+                    }
+                }
+            },
+            "from": #[from],
+            "size": #[size]
+        }
+        ]]>
+    </property>
+
+    <!--script 脚本引用-->
+    <property name="schoolScoreScript">
+        <![CDATA[{
+            "script": {
+              "lang": "painless",
+              "source": @"""
+                return doc ['school.keyword'].value == params.schoolName ? 10.0 : 1.0;
+              """
+            }
+        }]]>
+    </property>
+
+    <!--测试script_score 脚本-->
+    <property name="testScriptScoreByIncloudScript">
+        <![CDATA[
+        {
+            "explain": false,
+            "query": {
+              "function_score": {
+                "query": {
+                  "match": {
+                    "city": #[cityName]
+                  }
+                },
+                "script_score": {
+                  "script": {
+                    "id": "schoolScoreScript",
+                     "params": {
+                         "schoolName":#[schoolName]  ## 传入评分脚本函数需要的学校名称
+                     }
+                  }
+                }
+              }
+            },
+            "from": #[from],
+            "size": #[size]
+        }
+        ]]>
+    </property>
+
+    <!--餐厅评分 综合函数-->
+    <property name="testHellFunctionScore">
+        <![CDATA[
+        {
+            "explain": false,
+            "query": {
+                "function_score": {
+                    "query": {
+                        "bool": {
+                          "filter": {
+                            "geo_distance": {
+                              "distance": "10km",
+                              "location": {
+                                "lat": 40,
+                                "lon": 116
+                              }
+                            }
+                          }
+                        }
+                    },
+                    "functions": [
+                    {
+                      "filter": {
+                        "match": {
+                          "features": #[features]
+                        }
+                      },
+                      "weight": 10
+                    },
+                    {
+                        "field_value_factor": {
+                           "field": #[valueFactorFieldName],
+                           "factor": 0.1
+                         }
+                    },
+                    {
+                      "random_score": {
+                        "field":"docId",
+                        "seed": #[docId]
+                      }
+                    }
+                    ],
+                ## 各个函数分数的组合方式
+                "score_mode": "sum",
+                ## 评分得分和文档分数的组合方式
+                "boost_mode": "sum"
+                }
+            },
+            "from": #[from],
+            "size": #[size]
+        }
+        ]]>
+    </property>
+
+    <!--script 脚本引用-->
+    <property name="sinaScript">
+        <![CDATA[{
+            "script": {
+              "lang": "painless",
+              "source": @"""
+                return doc ['createDate'].value.getMillis() > params.time ? 1.5 : 1.0;
+              """
+            }
+        }]]>
+    </property>
+
+    <!--新浪微博评分 综合函数-->
+    <property name="testSinaFunctionScore">
+        <![CDATA[
+        {
+            "query": {
+                "function_score": {
+                    "query": {
+                        "match": {
+                            "content": #[content]
+                        }
+                    },
+                    "functions": [
+                        {
+                            "gauss": {
+                                  "createDate": {
+                                      "origin": #[createDate],
+                                      "scale": "6d",
+                                      "offset": "1d"
+                                }
+                            }
+                        },
+                        {
+                            "field_value_factor": {
+                                "field": #[valueFactorFieldName],
+                                "modifier": "log1p",
+                                "factor": 0.1
+                            }
+                        },
+                        {
+                            "script_score": {
+                              "script":
+                                   "return doc['is_recommend'].value && doc['is_recommend'].value && doc['createDate'].value.getMillis() > new Date().getTime()  ? 1.5 : 1.0"
+                            }
+                        }
+                    ],
+                    "boost_mode": "multiply"
+                    }
+                }
+            },
+            "from": #[from],
+            "size": #[size]
+        }
+        ]]>
+    </property>
+</properties>
