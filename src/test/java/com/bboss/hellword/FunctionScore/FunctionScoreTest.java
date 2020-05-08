@@ -25,7 +25,7 @@ public class FunctionScoreTest {
     private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);
 
     /**
-     * 创建学生索引
+     * 创建student索引
      */
     @Test
     public void dropAndCreateStudentIndice() {
@@ -37,7 +37,7 @@ public class FunctionScoreTest {
     }
 
     /**
-     * 创建商品索引
+     * 创建items索引
      */
     @Test
     public void dropAndCreateItemsIndice() {
@@ -49,7 +49,7 @@ public class FunctionScoreTest {
     }
 
     /**
-     * 导入商品数据
+     * 导入items数据
      */
     @Test
     public void insertItemsData() {

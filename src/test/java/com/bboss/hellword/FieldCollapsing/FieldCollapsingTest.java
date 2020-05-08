@@ -7,14 +7,12 @@ import com.frameworkset.orm.annotation.ESMetaInnerHits;
 import org.apache.commons.beanutils.BeanUtils;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
-import org.frameworkset.elasticsearch.client.ClientInterface;
-import org.frameworkset.elasticsearch.client.ClientOptions;
-import org.frameworkset.elasticsearch.client.RestClientUtil;
-import org.frameworkset.elasticsearch.client.ResultUtil;
+import org.frameworkset.elasticsearch.client.*;
 import org.frameworkset.elasticsearch.entity.ESDatas;
 import org.frameworkset.elasticsearch.entity.MapRestResponse;
 import org.frameworkset.elasticsearch.serial.ESInnerHitSerialThreadLocal;
 import org.frameworkset.elasticsearch.serial.ESTypeReference;
+import org.frameworkset.elasticsearch.template.ESInfo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -42,48 +40,44 @@ public class FieldCollapsingTest {
     //bboss依赖
     private BBossESStarter bbossESStarter;
 
+    //bboss dsl工具
+    private ClientInterface clientInterface;
+
     //索引名称
     private String recipesPoIndiceName = "recipes";
+
     //日志
     private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);
 
     /**
-     * 创建菜谱索引
+     * 创建recipes索引
      */
     @Test
     public void dropAndRecipesIndice() {
-
-        ClientInterface clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
         if (clientInterface.existIndice(recipesPoIndiceName)) {
+            logger.info(recipesPoIndiceName + "已存在，删除索引");
             clientInterface.dropIndice(recipesPoIndiceName);
         }
         clientInterface.createIndiceMapping(recipesPoIndiceName, "createRecipesIndice");
+        logger.info("成功创建索引" + recipesPoIndiceName);
     }
 
-    /**
-     * 添加菜品数据
+     /**
+     * 添加recipes索引数据
      */
     @Test
     public void insertRecipesData() {
-        ClientInterface clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
-        List<RecipesPo> recipesPoList = new ArrayList<>();
-        RecipesPo recipesPo = new RecipesPo();
-        RecipesPo recipesPo1 = new RecipesPo();
-
-        recipesPo.setName("清蒸鱼头");
-        recipesPo.setRating(3);
-        recipesPo.setType("湘菜");
-
-        recipesPo1.setName("鱼香肉丝");
-        recipesPo1.setRating(5);
-        recipesPo1.setType("川菜");
-
-        //配置索引参数
-        ClientOptions clientOptions = new ClientOptions();
-        clientOptions.setRefreshOption("refresh=true");
-        //String response = clientInterface.addDocuments(recipesPoIndiceName, );insertRecipesData
-        clientInterface.executeHttp("_bulk", "insertRecipesData", ClientInterface.HTTP_POST);
-        //System.out.println(response);
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        ClientInterface restClient = ElasticSearchHelper.getRestClientUtil();
+        //导入数据,并且实时刷新，测试需要，实际环境不要带refresh
+        ESInfo esInfo = clientInterface.getESInfo("bulkImportRecipesData");
+        StringBuilder recipedata = new StringBuilder();
+        recipedata.append(esInfo.getTemplate().trim());
+        recipedata.append("\n");
+        restClient.executeHttp("recipes/_bulk?refresh", recipedata.toString(), ClientUtil.HTTP_POST);
+        long recipeCount = clientInterface.countAll("recipes");
+        System.out.println("recipes当前条数" + recipeCount);
     }
 
     /**
@@ -91,7 +85,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testQueryRecipesPoByField() {
-        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -112,7 +106,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testSortRecipesPoByField() {
-        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -134,7 +128,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testQueryRecipesPoAllType() {
-        ClientInterface clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
+        clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -186,6 +180,13 @@ public class FieldCollapsingTest {
         });
     }
 
+    /**
+     * map转化为Bean
+     * @param beanMap
+     * @param clz
+     * @param <T>
+     * @return
+     */
     public static <T> T transMap2Bean2(Map<String, Object> beanMap, Class<T> clz) {
         //创建JavaBean对象
         //获取指定类的BeanInfo对象
@@ -219,7 +220,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testFieldCollapsing() {
-        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -243,7 +244,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testFieldCollapsingInnerHits() {
-        ClientInterface clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
