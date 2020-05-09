@@ -35,13 +35,18 @@
         <dependency>
             <groupId>com.bbossgroups.plugins</groupId>
             <artifactId>bboss-elasticsearch-rest-jdbc</artifactId>
-            <version>6.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>bboss-elasticsearch-rest-booter</artifactId>
+                    <groupId>com.bbossgroups.plugins</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!--bboss 启动器-->
         <dependency>
             <groupId>com.bbossgroups.plugins</groupId>
             <artifactId>bboss-elasticsearch-spring-boot-starter</artifactId>
-            <version>6.1.0</version>
+            <version>5.9.9</version>
         </dependency>
 
         <!--test-->
@@ -67,23 +72,26 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>bboss-elasticsearch-rest-booter</artifactId>
+                    <groupId>com.bbossgroups.plugins</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
+        <!--apache工具包-->
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils-core</artifactId>
             <version>1.8.0</version>
         </dependency>
 
-        <!--junit-->
-        <!--<dependency>-->
-            <!--<groupId>junit</groupId>-->
-            <!--<artifactId>junit</artifactId>-->
-            <!--<version>4.8.2</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
-
+        <!--alibb fastJson-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.62</version>
+        </dependency>
         <!--mysql-connector-->
         <dependency>
             <groupId>mysql</groupId>
@@ -99,23 +107,6 @@
             <version>3.23.1</version>
             <scope>test</scope>
         </dependency>
-
-        <!--log slf4j-->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.logging.log4j</groupId>-->
-            <!--<artifactId>log4j-slf4j-impl</artifactId>-->
-            <!--<version>2.8.2</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.logging.log4j</groupId>-->
-            <!--<artifactId>log4j-api</artifactId>-->
-            <!--<version>2.8.2</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.logging.log4j</groupId>-->
-            <!--<artifactId>log4j-core</artifactId>-->
-            <!--<version>2.8.2</version>-->
-        <!--</dependency>-->
     </dependencies>
 
     <!--编译-->

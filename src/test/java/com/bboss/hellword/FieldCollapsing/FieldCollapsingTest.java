@@ -70,7 +70,6 @@ public class FieldCollapsingTest {
     public void insertRecipesData() {
         clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
         ClientInterface restClient = ElasticSearchHelper.getRestClientUtil();
-        //导入数据,并且实时刷新，测试需要，实际环境不要带refresh
         ESInfo esInfo = clientInterface.getESInfo("bulkImportRecipesData");
         StringBuilder recipedata = new StringBuilder();
         recipedata.append(esInfo.getTemplate().trim());

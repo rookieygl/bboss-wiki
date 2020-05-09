@@ -24,7 +24,7 @@
         }]]>
     </property>
 
-    <!--t添加菜品数据-->
+    <!--添加菜品数据-->
     <property name="bulkImportRecipesData">
         <![CDATA[
             {"index" : {"_index" : "recipes" }}

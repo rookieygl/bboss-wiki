@@ -1,29 +1,42 @@
-<!--<properties>-->
+<properties>
 
-<!--    &lt;!&ndash;创建article索引  mapping dsl&ndash;&gt;-->
-<!--    <property name="createArticleIndice">-->
-<!--        <![CDATA[{-->
-<!--            "settings" : {-->
-<!--                "number_of_shards" : 1,-->
-<!--                "number_of_replicas" : 1-->
-<!--            },-->
-<!--            "mappings": {-->
-<!--                "properties": {-->
-<!--                    "maincontent": {-->
-<!--                        "type": "text"-->
-<!--                    }-->
-<!--                }-->
-<!--            }-->
-<!--        }]]>-->
-<!--    </property>-->
-<!--    &lt;!&ndash;t添加菜品数据&ndash;&gt;-->
+    <!--创建article索引-->
+    <property name="createArticleIndice">
+        <![CDATA[{
+            "settings" : {
+                "number_of_shards" : 1,
+                "number_of_replicas" : 1
+            },
+            "mappings": {
+                "properties": {
+                    "maincontent": {
+                        "type": "text"
+                    }
+                }
+            }
+        }]]>
+    </property>
 
-<!--    <property name="bulkInsertArticleData">-->
-<!--        <![CDATA[-->
-<!--            {"index" : {"_index" : "article" }}-->
-<!--            {"maincontent":"the quick red fox jumps over the sleepy cat"}-->
-<!--            {"index" : {"_index" : "article" }}-->
-<!--            {"maincontent":"the quick brown fox jumps over the lazy dog"}-->
-<!--        ]]>-->
-<!--    </property>-->
-<!--</properties>-->
+    <!--添加article数据-->
+    <property name="bulkInsertArticleData">
+        <![CDATA[
+            {"index" : {"_index" : "article" }}
+            {"maincontent":"the quick red fox jumps over the sleepy cat"}
+            {"index" : {"_index" : "article" }}
+            {"maincontent":"the quick brown fox jumps over the lazy dog"}
+        ]]>
+    </property>
+
+    <property name="testSpanTermQuery">
+        <![CDATA[{
+            "query": {
+                "span_term": {
+                    "maincontent": {
+                        "value": #[spanTermValue]
+                    }
+                }
+            }
+        }]]>
+    </property>
+
+</properties>
