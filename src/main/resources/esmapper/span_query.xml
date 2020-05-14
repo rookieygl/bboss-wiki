@@ -1,6 +1,8 @@
 <properties>
 
-    <!--创建article索引-->
+    <!--***SpanQuery测试案例***-->
+
+    <!--创建索引-->
     <property name="createArticleIndice">
         <![CDATA[{
             "settings" : {
@@ -27,6 +29,7 @@
         ]]>
     </property>
 
+    <!--测试SpanTermQuery-->
     <property name="testSpanTermQuery">
         <![CDATA[{
             "query": {
@@ -39,4 +42,70 @@
         }]]>
     </property>
 
+    <!--测试SpanTermQuery-->
+    <property name="testSpanNearQuery">
+        <![CDATA[{
+            "query": {
+                "span_near": {
+                "clauses": [
+                    {
+                        "span_term": {
+                            "maincontent": {
+                                "value": #[spanTermValue1]
+                            }
+                        }
+                    },
+                    {
+                        "span_term": {
+                            "maincontent": {
+                              "value": #[spanTermValue2]
+                            }
+                        }
+                    }
+                ],
+                "slop": #[slop],
+                "in_order": true
+                }
+            }
+        }]]>
+    </property>
+
+    <!--测试SpanNotQuery-->
+    <property name="testSpanNotQuery ">
+        <![CDATA[{
+          "query": {
+            "span_not": {
+              "include": {
+                "span_near": {
+                  "clauses": [
+                    {
+                      "span_term": {
+                        "maincontent": {
+                          "value": #[spanTermValue1]
+                        }
+                      }
+                    },
+                    {
+                      "span_term": {
+                        "maincontent": {
+                          "value": #[spanTermValue2]
+                        }
+                      }
+                    }
+                  ],
+                  "slop": #[slop],
+                  "in_order": true
+                }
+              },
+              "exclude": {
+                "span_term": {
+                  "maincontent": {
+                    "value": #[spanNotValue]
+                  }
+                }
+              }
+            }
+          }
+        }]]>
+    </property>
 </properties>

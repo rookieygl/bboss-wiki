@@ -1,7 +1,8 @@
 <properties>
 
-    <!-- 通过function_score函数计算相关度打分案例 -->
-    <!--创建菜谱索引Recipes  mapping dsl-->
+    <!-- ***FieldCollapsing字段折叠测试案例*** -->
+
+    <!--创建索引-->
     <property name="createRecipesIndice">
         <![CDATA[{
             "settings" : {

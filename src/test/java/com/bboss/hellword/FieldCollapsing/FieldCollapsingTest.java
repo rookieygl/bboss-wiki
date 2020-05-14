@@ -55,6 +55,7 @@ public class FieldCollapsingTest {
     @Test
     public void dropAndRecipesIndice() {
         clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        /*检查索引是否存在，存在就删除重建*/
         if (clientInterface.existIndice(recipesPoIndiceName)) {
             logger.info(recipesPoIndiceName + "已存在，删除索引");
             clientInterface.dropIndice(recipesPoIndiceName);
