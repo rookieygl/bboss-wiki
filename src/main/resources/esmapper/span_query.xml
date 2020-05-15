@@ -19,7 +19,7 @@
         }]]>
     </property>
 
-    <!--添加article数据-->
+    <!--添加索引数据-->
     <property name="bulkInsertArticleData">
         <![CDATA[
             {"index" : {"_index" : "article" }}

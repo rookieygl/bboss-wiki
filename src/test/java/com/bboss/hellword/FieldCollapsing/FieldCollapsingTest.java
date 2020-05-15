@@ -36,25 +36,26 @@ import java.util.Map;
 @RunWith(SpringRunner.class)
 public class FieldCollapsingTest {
 
+
+    private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);//日志
+
     @Autowired
-    //bboss依赖
-    private BBossESStarter bbossESStarter;
 
-    //bboss dsl工具
-    private ClientInterface clientInterface;
+    private BBossESStarter bbossESStarter;//bboss依赖
 
-    //索引名称
-    private String recipesPoIndiceName = "recipes";
 
-    //日志
-    private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);
+    private ClientInterface clientInterface;//bboss dsl工具
+    
+    private String recipesPoIndiceName = "recipes"; //索引名称
+
+    private String fieldCollapsingDSLPath = " esmapper/field_collapsing.xml";
 
     /**
      * 创建recipes索引
      */
     @Test
     public void dropAndRecipesIndice() {
-        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient(fieldCollapsingDSLPath);
         /*检查索引是否存在，存在就删除重建*/
         if (clientInterface.existIndice(recipesPoIndiceName)) {
             logger.info(recipesPoIndiceName + "已存在，删除索引");
@@ -69,7 +70,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void insertRecipesData() {
-        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient(fieldCollapsingDSLPath);
         ClientInterface restClient = ElasticSearchHelper.getRestClientUtil();
         ESInfo esInfo = clientInterface.getESInfo("bulkImportRecipesData");
         StringBuilder recipedata = new StringBuilder();
@@ -85,7 +86,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testQueryRecipesPoByField() {
-        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient(fieldCollapsingDSLPath);
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -106,7 +107,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testSortRecipesPoByField() {
-        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient(fieldCollapsingDSLPath);
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -128,7 +129,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testQueryRecipesPoAllType() {
-        clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/field_collapsing.xml");
+        clientInterface = ElasticSearchHelper.getConfigRestClientUtil(fieldCollapsingDSLPath);
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -220,7 +221,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testFieldCollapsing() {
-        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient(fieldCollapsingDSLPath);
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");
@@ -244,7 +245,7 @@ public class FieldCollapsingTest {
      */
     @Test
     public void testFieldCollapsingInnerHits() {
-        clientInterface = bbossESStarter.getConfigRestClient("esmapper/field_collapsing.xml");
+        clientInterface = bbossESStarter.getConfigRestClient(fieldCollapsingDSLPath);
         Map<String, Object> queryMap = new HashMap<>();
         //查询条件
         queryMap.put("recipeName", "鱼");

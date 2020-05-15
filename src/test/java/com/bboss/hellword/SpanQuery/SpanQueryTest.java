@@ -44,7 +44,7 @@ public class SpanQueryTest {
 	private String paragraphWordsIndexName1 = "sample1";//同段/同句索引名称1
 	private String paragraphWordsIndexName2 = "sample2";//同段/同句索引名称2
 
-	private String paragraphWordsDSLPath = "esmapper/paragraph_words.xml";//同段/同句 dsl文件
+	private String paragraphWordsDSLPath = "esmapper/sentence_paragrah.xml";//同段/同句 dsl文件
 
 	/**
 	 * 创建student索引
@@ -207,5 +207,29 @@ public class SpanQueryTest {
 		}
 		long recipeCount = clientInterface.countAll(spanQueryIndexName);
 		logger.info(spanQueryIndexName + "当前条数" + recipeCount);
+	}
+
+
+	/**
+	 * 测试同段搜索
+	 */
+	@Test
+	public void testParagraphQuery() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
+			//封装请求参数
+			Map<String, String> queryParams = new HashMap<>(5);
+			queryParams.put("spanTermValue1", "java");
+			queryParams.put("spanTermValue2", "javascript");
+			queryParams.put("slop", "3");
+			queryParams.put("queryType", "paragraph");
+			MapRestResponse testSpanTermQuery = clientInterface.search(paragraphWordsIndexName1 + "/_search?search_type=dfs_query_then_fetch", "testParagraphQuery", queryParams);
+			//ES返回结果遍历
+			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
+				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testSpanTermQuery 执行失败" + e);
+		}
 	}
 }
