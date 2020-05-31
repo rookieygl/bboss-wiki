@@ -50,7 +50,6 @@ services:
       - node.data=false
       # network
       - network.host=0.0.0.0
-      - network.publish_host=elasticsearch # es 集群发布host
       - http.port=9200
       - transport.port=9300
       - bootstrap.memory_lock=true
@@ -71,6 +70,7 @@ services:
     volumes:
       - /data/es/es_master/data:/usr/share/elasticsearch/data
       - /data/es/es_master/logs:/usr/share/elasticsearch/logs
+      - /usr/local/src/ik7:/usr/share/elasticsearch/plugins/analysis-ik
 #      - es_master:/usr/share/elasticsearch/data
 #      - es_master:/usr/share/elasticsearch/logs
     ports:
@@ -115,6 +115,7 @@ services:
     volumes:
       - /data/es/es_node1/data:/usr/share/elasticsearch/data
       - /data/es/es_node1/logs:/usr/share/elasticsearch/logs
+      - /usr/local/src/ik7:/usr/share/elasticsearch/plugins/analysis-ik
     networks:
       es7net:
         aliases:

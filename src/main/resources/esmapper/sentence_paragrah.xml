@@ -23,7 +23,17 @@
                     "sentence_paragrah_mapping": {
                       "type": "mapping",
                       "mappings": [
-                       #[sampleMappings,serialJson=true]
+                            @"""<h1> => \u0020paragraph\u0020""",
+                            @"""</h1> => \u0020sentence\u0020paragraph\u0020""",
+                            @"""<h2> => \u0020paragraph\u0020""",
+                            @"""</h2> => \u0020sentence\u0020paragraph\u0020""",
+                            @"""<p> => \u0020paragraph\u0020""",
+                            @"""</p> => \u0020sentence\u0020paragraph\u0020""",
+                            @"""! => \u0020sentence\u0020""",
+                            @"""? => \u0020sentence\u0020""",
+                            @"""。=> \u0020sentence\u0020""",
+                            @"""？=> \u0020sentence\u0020""",
+                            @"""！=> \u0020sentence\u0020"""
                       ]
                     }
                   }
