@@ -4,40 +4,47 @@ services:
     image: lmenezes/cerebro:0.8.4
     container_name: cerebro
     ports:
-      - "9000:9000"
+      - 9000:9000
     command:
-      - -Dhosts.0.host=http://elasticsearch:9200
+      - -Dhosts.0.host=http://elasticsearch:9202
     networks:
       - es7net
   kibana:
     image: kibana:7.6.2
-    container_name: kibana
+    container_name: sin_kibana
     environment:
-      - xpack_graph_enabled=false
+#      - SERVER.PORT=5602
+#      - elasticsearch.hosts=http://elasticsearch:9201
+#      - ELASTICSEARCH_URL=http://elasticsearch:9202
+      - XPACK.MONITORING.UI.CONTAINER.ELASTICSEARCH.ENABLED=false
+      - elasticsearch.ssl.verify=false
+      - XPACK_GRAPH_ENABLED=false
       - xpack_monitoring_collection_enabled=true
       - timelion_enabled=false
     ports:
-      - 5601:5601
+      - 5602:5602
     networks:
       - es7net
   elasticsearch:
     image: elasticsearch:7.6.2
-    container_name: es
-    hostname: es_node1
+    container_name: single_es
+    hostname: single_es
     extra_hosts:
-      - "es_node1:192.168.147.102"
+      - "es_node1.yml:192.168.147.102"
     environment:
       - cluster.name=elastic
-      - node.name=es_node1
+      - node.name=single_es
       - node.master=true
       - node.data=true
+      - http.port=9202
+      - transport.port=9302
       - bootstrap.memory_lock=true
       - http.cors.enabled=true
       - http.cors.allow-origin=*
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - discovery.seed_hosts=es_node1
-      - network.publish_host=elasticsearch
-      - cluster.initial_master_nodes=es_node1
+      - discovery.seed_hosts=single_es
+#      - network.publish_host=elasticsearch
+      - cluster.initial_master_nodes=single_es
       - xpack.security.enabled=false
       - xpack.monitoring.collection.enabled=true
     ulimits:
@@ -48,8 +55,8 @@ services:
       - /data/es/single_es/data:/usr/share/elasticsearch/data
       - /data/es/single_es/logs:/usr/share/elasticsearch/logs
     ports:
-      - 9200:9200
-      - 9300:9300
+      # 对外只需开放9200
+      - 9202:9202
     networks:
       - es7net
 volumes:

@@ -1,0 +1,11 @@
+# host
+server.host: "0.0.0.0"
+# 端口
+server.port: 5601
+# 指定访问
+elasticsearch.hosts: "http://es_master:9200"
+#xpack_graph_enabled: false
+#xpack.monitoring.ui.container.elasticsearch.enabled: false
+### kibana 监控
+#xpack_monitoring_collection_enabled: false
+#timelion_enabled: false

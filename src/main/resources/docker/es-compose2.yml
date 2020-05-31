@@ -1,0 +1,133 @@
+version: '3'
+#服务配置
+#volumes:
+#  es_master:
+#    driver: local
+#  es_node1:
+#    driver: local
+networks:
+  es7net:
+#    driver: bridge
+services:
+  kibana:
+    image: kibana:7.1.0
+    container_name: kibana
+    restart: always
+    privileged: true
+    environment:
+      - server_name=kibana
+      #      - server.host=0.0.0.0
+      #      - server.port=5601
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - elasticsearch_url=http://elasticsearch:9200
+      # xpack
+      - xpack_graph_enabled=true
+#      - xpack.monitoring.ui.container.elasticsearch.enabled=false
+      - timelion_enabled=true
+#      ## kibana监控
+      - xpack_monitoring_collection_enabled=true
+    ports:
+      - 5601:5601
+    volumes:
+#      - /usr/local/src/part_es/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - /data/kibana/data:/usr/share/kibana/data
+      - /data/kibana/logs:/usr/share/kibana/logs
+    networks:
+      - es7net
+#    depends_on:
+#      - elasticsearch
+
+  ## ES master 节点
+  elasticsearch:
+    image: elasticsearch:7.1.0
+    container_name: es_master
+    hostname: es_master
+    restart: always
+    environment:
+      - cluster.name=elastic_cluster
+      - node.name=es_master
+      - node.master=true
+      - node.data=false
+      # network
+      - network.host=0.0.0.0
+      - network.publish_host=elasticsearch # es 集群发布host
+      - http.port=9200
+      - transport.port=9300
+      - bootstrap.memory_lock=true
+      - cluster.initial_master_nodes=es_master
+      - discovery.seed_hosts=es_master,es_node1
+      # 跨域
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      # jvm参数
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      # xpack
+      - xpack.security.enabled=false
+      - xpack.monitoring.collection.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /data/es/es_master/data:/usr/share/elasticsearch/data
+      - /data/es/es_master/logs:/usr/share/elasticsearch/logs
+#      - es_master:/usr/share/elasticsearch/data
+#      - es_master:/usr/share/elasticsearch/logs
+    ports:
+      - 9200:9200
+    #      - 9300:9300
+    networks:
+      es7net:
+        aliases:
+          - es_master
+
+  ## ES数据节点
+  es_node1:
+    image: elasticsearch:7.1.0
+    container_name: es_node1
+    hostname: es_node1
+    restart: always
+    environment:
+      - cluster.name=elastic_cluster
+      - node.name=es_node1
+      - node.master=false
+      - node.data=true
+      # network
+      - network.host=0.0.0.0
+      - http.port=9200
+      - transport.port=9300
+      - bootstrap.memory_lock=true
+      - cluster.initial_master_nodes=es_master
+      - discovery.seed_hosts=es_master,es_node1
+      # 跨域
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      # jvm参数
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      # xpack
+      - xpack.security.enabled=false
+      # kibana监控
+      - xpack.monitoring.collection.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /data/es/es_node1/data:/usr/share/elasticsearch/data
+      - /data/es/es_node1/logs:/usr/share/elasticsearch/logs
+    networks:
+      es7net:
+        aliases:
+          - es_node1
+
+  # 类似es_head的es管理工具
+  cerebro:
+    image: lmenezes/cerebro:0.8.4
+    container_name: cerebro
+    restart: always
+    ports:
+      - 9000:9000
+    command:
+      - -Dhosts.0.host=http://es_master:9200
+    networks:
+      - es7net
