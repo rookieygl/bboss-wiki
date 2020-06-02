@@ -52,14 +52,13 @@
         }]]>
     </property>
 
-    <!--测试分词效果-->
-    <property name="testIndexAnalyze">
+    <!--测试HTML分词器-->
+    <property name="testHtmlAnalyze">
         <![CDATA[{
           "text": ["<p>java python javascript</p><p>oracle mysql sqlserver</p>"],
           "analyzer": "simple1_mainContent"
         }]]>
     </property>
-
 
     <!--添加索引数据-->
     <property name="bulkSample1Data">
@@ -67,45 +66,6 @@
             {"index" : {"_index" : "sample1" }}
             {"mainContent":"<p>java python javascript</p><p>oracle mysql sqlserver</p>"}
         ]]>
-    </property>
-
-    <!--同段搜索-->
-    <property name="testParagraphQuery">
-        <![CDATA[{
-            "query": {
-                "span_not": {
-                  "include": {
-                    "span_near": {
-                      "clauses": [
-                        {
-                          "span_term": {
-                            "mainContent": {
-                              "value": #[spanTermValue1]
-                            }
-                          }
-                        },
-                        {
-                          "span_term": {
-                            "mainContent": {
-                              "value": #[spanTermValue2]
-                            }
-                          }
-                        }
-                      ],
-                      "slop": #[slop],
-                      "in_order": false
-                    }
-                  },
-                  "exclude": {
-                    "span_term": {
-                      "mainContent": {
-                        "value": #[queryType]
-                      }
-                    }
-                  }
-                }
-            }
-        }]]>
     </property>
 
     <!--创建索引-->
@@ -160,4 +120,50 @@
         ]]>
     </property>
 
+    <!--测试Text分词器-->
+    <property name="testTextAnalyze">
+        <![CDATA[{
+          "text": ["ava python javascript\noracle mysql sqlserver"],
+          "analyzer": "simple2_mainContent"
+        }]]>
+    </property>
+
+    <!--同段搜索-->
+    <property name="testParagraphQuery">
+        <![CDATA[{
+            "query": {
+                "span_not": {
+                  "include": {
+                    "span_near": {
+                      "clauses": [
+                        {
+                          "span_term": {
+                            "mainContent": {
+                              "value": #[spanTermValue1]
+                            }
+                          }
+                        },
+                        {
+                          "span_term": {
+                            "mainContent": {
+                              "value": #[spanTermValue2]
+                            }
+                          }
+                        }
+                      ],
+                      "slop": #[slop],
+                      "in_order": false
+                    }
+                  },
+                  "exclude": {
+                    "span_term": {
+                      "mainContent": {
+                        "value": #[queryType]
+                      }
+                    }
+                  }
+                }
+            }
+        }]]>
+    </property>
 </properties>

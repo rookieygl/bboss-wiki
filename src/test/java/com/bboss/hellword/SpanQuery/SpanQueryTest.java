@@ -102,7 +102,7 @@ public class SpanQueryTest {
 			MapRestResponse testSpanTermQuery = clientInterface.search(spanQueryIndexName + "/_search?search_type=dfs_query_then_fetch", "testSpanTermQuery", queryParams);
 			//ES返回结果遍历
 			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
-				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source" + searchHit.getSource().toString());
+				logger.info("\n文档ID:" + searchHit.getId() + "\n" + "文档_source:" + searchHit.getSource().toString());
 			});
 		} catch (ElasticSearchException e) {
 			logger.error("testSpanTermQuery 执行失败" + e);
@@ -124,7 +124,7 @@ public class SpanQueryTest {
 			MapRestResponse testSpanTermQuery = clientInterface.search(spanQueryIndexName + "/_search?search_type=dfs_query_then_fetch", "testSpanNearQuery", queryParams);
 			//ES返回结果遍历
 			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
-				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());
+				logger.info("\n文档ID:" + searchHit.getId() + "\n" + "文档_source:" + searchHit.getSource().toString());
 			});
 		} catch (ElasticSearchException e) {
 			logger.error("testSpanTermQuery 执行失败" + e);
@@ -147,7 +147,7 @@ public class SpanQueryTest {
 			MapRestResponse testSpanTermQuery = clientInterface.search(spanQueryIndexName + "/_search?search_type=dfs_query_then_fetch", "testSpanNotQuery", queryParams);
 			//ES返回结果遍历
 			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
-				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());
+				logger.info("\n文档ID:" + searchHit.getId() + "\n" + "文档_source:" + searchHit.getSource().toString());
 			});
 		} catch (ElasticSearchException e) {
 			logger.error("testSpanTermQuery 执行失败" + e);
@@ -155,7 +155,7 @@ public class SpanQueryTest {
 	}
 
 	/**
-	 * 创建simple1索引
+	 * 创建simple1 html数据索引
 	 */
 	@Test
 	public void dropAndCreateSample1Indice() {
@@ -175,28 +175,7 @@ public class SpanQueryTest {
 	}
 
 	/**
-	 * 测试分词
-	 */
-	@Test
-	public void testIndexAnalyze() {
-		try {
-			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
-			//封装请求参数
-			Map<String, String> queryParams = new HashMap<>(5);
-			queryParams.put("spanTermValue1", "java");
-			queryParams.put("spanTermValue2", "javascript");
-			queryParams.put("slop", "3");
-			queryParams.put("queryType", "paragraph");
-			String analyzeResult = clientInterface.executeHttp(paragraphWordsIndexName1 + "/_analyze", "testIndexAnalyze", ClientUtil.HTTP_POST);
-			//分词结果
-			logger.info(analyzeResult);
-		} catch (ElasticSearchException e) {
-			logger.error("testIndexAnalyze 执行失败" + e);
-		}
-	}
-
-	/**
-	 * 添加simp1数据
+	 * 添加simp1 html数据
 	 */
 	@Test
 	public void insertSimple1IndiceData() {
@@ -215,6 +194,28 @@ public class SpanQueryTest {
 		logger.info(spanQueryIndexName + " 当前条数: " + recipeCount);
 	}
 
+
+	/**
+	 * 测试HTML分词器
+	 */
+	@Test
+	public void testHtmlAnalyze() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
+			//封装请求参数
+			Map<String, String> queryParams = new HashMap<>(5);
+			queryParams.put("spanTermValue1", "java");
+			queryParams.put("spanTermValue2", "javascript");
+			queryParams.put("slop", "3");
+			queryParams.put("queryType", "paragraph");
+			String analyzeResult = clientInterface.executeHttp(paragraphWordsIndexName1 + "/_analyze", "testHtmlAnalyze", ClientUtil.HTTP_POST);
+			//分词结果
+			logger.info("\n分词效果:"+ analyzeResult);
+		} catch (ElasticSearchException e) {
+			logger.error("testIndexAnalyze 执行失败" + e);
+		}
+	}
+
 	/**
 	 * 测试HTML同段搜索
 	 */
@@ -231,15 +232,16 @@ public class SpanQueryTest {
 			MapRestResponse testSpanTermQuery = clientInterface.search(paragraphWordsIndexName1 + "/_search?search_type=dfs_query_then_fetch", "testParagraphQuery", queryParams);
 			//ES返回结果遍历
 			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
-				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());
+				logger.info("\n文档ID:" + searchHit.getId() + "\n" + "文档_source:" + searchHit.getSource().toString());
 			});
+			logger.info("文档搜索完成");
 		} catch (ElasticSearchException e) {
 			logger.error("testSpanTermQuery 执行失败" + e);
 		}
 	}
 
 	/**
-	 * 创建simple1索引
+	 * 创建simple2 纯文本索引数据
 	 */
 	@Test
 	public void dropAndCreateSample2Indice() {
@@ -249,19 +251,8 @@ public class SpanQueryTest {
 			if (clientInterface.existIndice(paragraphWordsIndexName2)) {
 				clientInterface.dropIndice(paragraphWordsIndexName2);
 			}
-
-			Map<String, String> simpleParams = new HashMap<>();
-			/*mapping创建分词器，带有特殊字符，使用Bboss传参方式处理*/
-			String simpleMapping = " \"\"\"\\n => \\\u0020sentence\\\u0020paragraph\\\u0020 \"\"\",\n" +
-					"\"\"\"! => \\\u0020sentence\\\u0020 \"\"\",\n" +
-					"\"\"\"? => \\\u0020sentence\\\u0020 \"\"\",\n" +
-					"\"\"\"。=> \\\u0020sentence\\\u0020 \"\"\",\n" +
-					"\"\"\"？=> \\\u0020sentence\\\u0020 \"\"\",\n" +
-					"\"\"\"！=> \\\u0020sentence\\\u0020\"\"\"";
-
-			simpleParams.put("sampleMappings", simpleMapping);
 			/*传参，创建索引*/
-			clientInterface.createIndiceMapping(paragraphWordsIndexName2, "createSample2Indice", simpleParams);
+			clientInterface.createIndiceMapping(paragraphWordsIndexName2, "createSample2Indice");
 			logger.info("create indice: " + paragraphWordsIndexName2 + " is done");
 		} catch (ElasticSearchException e) {
 			logger.error("create indice faild: " + paragraphWordsIndexName2 + e);
@@ -269,7 +260,7 @@ public class SpanQueryTest {
 	}
 
 	/**
-	 * 测试同段搜索
+	 * 添加simp2 纯文本数据
 	 */
 	@Test
 	public void insertSimple2IndiceData() {
@@ -289,7 +280,28 @@ public class SpanQueryTest {
 	}
 
 	/**
-	 * 测试HTML同段搜索
+	 * 测试Text分词器
+	 */
+	@Test
+	public void testTextAnalyze() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
+			//封装请求参数
+			Map<String, String> queryParams = new HashMap<>(5);
+			queryParams.put("spanTermValue1", "java");
+			queryParams.put("spanTermValue2", "javascript");
+			queryParams.put("slop", "3");
+			queryParams.put("queryType", "paragraph");
+			String analyzeResult = clientInterface.executeHttp(paragraphWordsIndexName2 + "/_analyze", "testTextAnalyze", ClientUtil.HTTP_POST);
+			//分词结果
+			logger.info("\n分词效果:"+ analyzeResult);
+		} catch (ElasticSearchException e) {
+			logger.error("testIndexAnalyze 执行失败" + e);
+		}
+	}
+
+	/**
+	 * 测试Text同段搜索
 	 */
 	@Test
 	public void testTextParagraphQuery() {
@@ -304,8 +316,9 @@ public class SpanQueryTest {
 			MapRestResponse testSpanTermQuery = clientInterface.search(paragraphWordsIndexName2 + "/_search?search_type=dfs_query_then_fetch", "testParagraphQuery", queryParams);
 			//ES返回结果遍历
 			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
-				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());
+				logger.info("\n文档ID:" + searchHit.getId() + "\n" + "文档_source:" + searchHit.getSource().toString());
 			});
+			logger.info("文档搜索完成");
 		} catch (ElasticSearchException e) {
 			logger.error("testSpanTermQuery 执行失败" + e);
 		}

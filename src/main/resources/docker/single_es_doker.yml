@@ -52,7 +52,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - /data/es/single_es/data:/usr/share/elasticsearch/data
+      - s/data:/usr/share/elasticsearch/data
       - /data/es/single_es/logs:/usr/share/elasticsearch/logs
     ports:
       # 对外只需开放9200
