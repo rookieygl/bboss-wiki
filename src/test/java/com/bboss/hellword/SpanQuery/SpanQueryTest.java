@@ -81,7 +81,7 @@ public class SpanQueryTest {
 			logger.error(spanQueryIndexName + "插入数据失败，请检查错误日志");
 		}
 		long recipeCount = clientInterface.countAll(spanQueryIndexName);
-		logger.info(spanQueryIndexName + "当前条数" + recipeCount);
+		logger.info(spanQueryIndexName + " 当前条数： " + recipeCount);
 	}
 
 	/**
@@ -158,7 +158,7 @@ public class SpanQueryTest {
 	 * 创建simple1索引
 	 */
 	@Test
-	public void dropAndCreateSampleIndice() {
+	public void dropAndCreateSample1Indice() {
 		try {
 			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);//bboss读取xml
 			/*检查索引是否存在，存在就删除重建*/
@@ -166,26 +166,32 @@ public class SpanQueryTest {
 				clientInterface.dropIndice(paragraphWordsIndexName1);
 			}
 
-			Map<String, String> simpleParams = new HashMap<>();
-			/*mapping创建分词器，带有特殊字符，使用Bboss传参方式处理*/
-			String simpleMapping = " \"\"\"<h1> => \\u0020paragraph\\u0020\"\"\",\n" +
-					"\"\"\"</h1> => \\u0020sentence\\u0020paragraph\\u0020 \"\"\",\n" +
-					"\"\"\"<h2> => \\u0020paragraph\\u0020\"\"\",\n" +
-					"\"\"\"</h2> => \\u0020sentence\\u0020paragraph\\u0020 \"\"\",\n" +
-					"\"\"\"<p> => \\u0020paragraph\\u0020\"\"\",\n" +
-					"\"\"\"</p> => \\u0020sentence\\u0020paragraph\\u0020 \"\"\",\n" +
-					"\"\"\"! => \\u0020sentence\\u0020 \"\"\",\n" +
-					"\"\"\"? => \\u0020sentence\\u0020 \"\"\",\n" +
-					"\"\"\"。=> \\u0020sentence\\u0020 \"\"\",\n" +
-					"\"\"\"？=> \\u0020sentence\\u0020 \"\"\",\n" +
-					"\"\"\"！=> \\u0020sentence\\u0020\"\"\"";
-
-			simpleParams.put("sampleMappings", simpleMapping);
 			/*传参，创建索引*/
-			clientInterface.createIndiceMapping(paragraphWordsIndexName1, "createSample1Indice", simpleParams);
+			clientInterface.createIndiceMapping(paragraphWordsIndexName1, "createSample1Indice");
 			logger.info("create indice: " + paragraphWordsIndexName1 + " is done");
 		} catch (ElasticSearchException e) {
 			logger.error("create indice faild: " + paragraphWordsIndexName1 + e);
+		}
+	}
+
+	/**
+	 * 测试分词
+	 */
+	@Test
+	public void testIndexAnalyze() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
+			//封装请求参数
+			Map<String, String> queryParams = new HashMap<>(5);
+			queryParams.put("spanTermValue1", "java");
+			queryParams.put("spanTermValue2", "javascript");
+			queryParams.put("slop", "3");
+			queryParams.put("queryType", "paragraph");
+			String analyzeResult = clientInterface.executeHttp(paragraphWordsIndexName1 + "/_analyze", "testIndexAnalyze", ClientUtil.HTTP_POST);
+			//分词结果
+			logger.info(analyzeResult);
+		} catch (ElasticSearchException e) {
+			logger.error("testIndexAnalyze 执行失败" + e);
 		}
 	}
 
@@ -206,15 +212,14 @@ public class SpanQueryTest {
 			logger.error(spanQueryIndexName + "插入数据失败，请检查错误日志");
 		}
 		long recipeCount = clientInterface.countAll(spanQueryIndexName);
-		logger.info(spanQueryIndexName + "当前条数" + recipeCount);
+		logger.info(spanQueryIndexName + " 当前条数: " + recipeCount);
 	}
 
-
 	/**
-	 * 测试同段搜索
+	 * 测试HTML同段搜索
 	 */
 	@Test
-	public void testParagraphQuery() {
+	public void testHtmlParagraphQuery() {
 		try {
 			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
 			//封装请求参数
@@ -224,6 +229,79 @@ public class SpanQueryTest {
 			queryParams.put("slop", "3");
 			queryParams.put("queryType", "paragraph");
 			MapRestResponse testSpanTermQuery = clientInterface.search(paragraphWordsIndexName1 + "/_search?search_type=dfs_query_then_fetch", "testParagraphQuery", queryParams);
+			//ES返回结果遍历
+			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
+				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testSpanTermQuery 执行失败" + e);
+		}
+	}
+
+	/**
+	 * 创建simple1索引
+	 */
+	@Test
+	public void dropAndCreateSample2Indice() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);//bboss读取xml
+			/*检查索引是否存在，存在就删除重建*/
+			if (clientInterface.existIndice(paragraphWordsIndexName2)) {
+				clientInterface.dropIndice(paragraphWordsIndexName2);
+			}
+
+			Map<String, String> simpleParams = new HashMap<>();
+			/*mapping创建分词器，带有特殊字符，使用Bboss传参方式处理*/
+			String simpleMapping = " \"\"\"\\n => \\\u0020sentence\\\u0020paragraph\\\u0020 \"\"\",\n" +
+					"\"\"\"! => \\\u0020sentence\\\u0020 \"\"\",\n" +
+					"\"\"\"? => \\\u0020sentence\\\u0020 \"\"\",\n" +
+					"\"\"\"。=> \\\u0020sentence\\\u0020 \"\"\",\n" +
+					"\"\"\"？=> \\\u0020sentence\\\u0020 \"\"\",\n" +
+					"\"\"\"！=> \\\u0020sentence\\\u0020\"\"\"";
+
+			simpleParams.put("sampleMappings", simpleMapping);
+			/*传参，创建索引*/
+			clientInterface.createIndiceMapping(paragraphWordsIndexName2, "createSample2Indice", simpleParams);
+			logger.info("create indice: " + paragraphWordsIndexName2 + " is done");
+		} catch (ElasticSearchException e) {
+			logger.error("create indice faild: " + paragraphWordsIndexName2 + e);
+		}
+	}
+
+	/**
+	 * 测试同段搜索
+	 */
+	@Test
+	public void insertSimple2IndiceData() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);//bboss读取xml
+			ClientInterface restClient = ElasticSearchHelper.getRestClientUtil();//插入数据用RestClient
+			ESInfo esInfo = clientInterface.getESInfo("bulkSample2Data");//获取插入数据
+			StringBuilder recipedata = new StringBuilder();
+			recipedata.append(esInfo.getTemplate().trim());
+			recipedata.append("\n");
+			restClient.executeHttp(paragraphWordsIndexName1 + "/_bulk?refresh", recipedata.toString(), ClientUtil.HTTP_POST);
+		} catch (ElasticSearchException e) {
+			logger.error(spanQueryIndexName + "插入数据失败，请检查错误日志");
+		}
+		long recipeCount = clientInterface.countAll(spanQueryIndexName);
+		logger.info(spanQueryIndexName + " 当前条数： " + recipeCount);
+	}
+
+	/**
+	 * 测试HTML同段搜索
+	 */
+	@Test
+	public void testTextParagraphQuery() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient(paragraphWordsDSLPath);
+			//封装请求参数
+			Map<String, String> queryParams = new HashMap<>(5);
+			queryParams.put("spanTermValue1", "java");
+			queryParams.put("spanTermValue2", "javascript");
+			queryParams.put("slop", "3");
+			queryParams.put("queryType", "paragraph");
+			MapRestResponse testSpanTermQuery = clientInterface.search(paragraphWordsIndexName2 + "/_search?search_type=dfs_query_then_fetch", "testParagraphQuery", queryParams);
 			//ES返回结果遍历
 			testSpanTermQuery.getSearchHits().getHits().forEach(searchHit -> {
 				logger.info("\n文档ID： " + searchHit.getId() + "\n" + "文档_source: " + searchHit.getSource().toString());

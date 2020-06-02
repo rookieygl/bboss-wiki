@@ -10,7 +10,7 @@
                 "number_of_shards": 1,
                 "analysis": {
                   "analyzer": {
-                    "maincontent_analyzer": {
+                    "simple1_mainContent": {
                       "type": "custom",
                       "char_filter": [
                         "sentence_paragrah_mapping",
@@ -23,7 +23,18 @@
                     "sentence_paragrah_mapping": {
                       "type": "mapping",
                       "mappings": [
-                       #[sampleMappings,serialJson=true]
+                        ## script要用@进行转义，否则url校验不通过
+                        @"""<h1> => \u0020paragraph\u0020""",
+                        @"""</h1> => \u0020sentence\u0020paragraph\u0020""",
+                        @"""<h2> => \u0020paragraph\u0020""",
+                        @"""</h2> => \u0020sentence\u0020paragraph\u0020""",
+                        @"""<p> => \u0020paragraph\u0020""",
+                        @"""</p> => \u0020sentence\u0020paragraph\u0020""",
+                        @"""! => \u0020sentence\u0020""",
+                        @"""? => \u0020sentence\u0020""",
+                        @"""。=> \u0020sentence\u0020""",
+                        @"""？=> \u0020sentence\u0020""",
+                        @"""！=> \u0020sentence\u0020"""
                       ]
                     }
                   }
@@ -33,13 +44,22 @@
                     "properties": {
                       "mainContent": {
                         "type": "text",
-                        "analyzer": "maincontent_analyzer",
+                        "analyzer": "simple1_mainContent",
                         "search_analyzer": "ik_smart"
                      }
                 }
             }
         }]]>
     </property>
+
+    <!--测试分词效果-->
+    <property name="testIndexAnalyze">
+        <![CDATA[{
+          "text": ["<p>java python javascript</p><p>oracle mysql sqlserver</p>"],
+          "analyzer": "simple1_mainContent"
+        }]]>
+    </property>
+
 
     <!--添加索引数据-->
     <property name="bulkSample1Data">
@@ -87,4 +107,57 @@
             }
         }]]>
     </property>
+
+    <!--创建索引-->
+    <property name="createSample2Indice">
+        <![CDATA[{
+            "settings": {
+                "number_of_replicas": 0,
+                "number_of_shards": 1,
+                "analysis": {
+                  "analyzer": {
+                    "simple2_mainContent": {
+                      "type": "custom",
+                      "char_filter": [
+                        "sentence_paragrah_mapping"
+                      ],
+                      "tokenizer": "ik_max_word"
+                    }
+                  },
+                  "char_filter": {
+                    "sentence_paragrah_mapping": {
+                      "type": "mapping",
+                      "mappings": [
+                        ## script要用@进行转义，否则url校验不通过
+                        @"""\n => \u0020sentence\u0020paragraph\u0020 """,
+                        @"""! => \u0020sentence\u0020 """,
+                        @"""? => \u0020sentence\u0020 """,
+                        @"""。=> \u0020sentence\u0020 """,
+                        @"""？=> \u0020sentence\u0020 """,
+                        @"""！=> \u0020sentence\u0020"""
+                      ]
+                    }
+                  }
+                }
+                },
+                "mappings": {
+                "properties": {
+                  "mainContent": {
+                    "type": "text",
+                    "analyzer": "simple2_mainContent",
+                    "search_analyzer": "ik_smart"
+                  }
+                }
+            }
+        }]]>
+    </property>
+
+    <!--添加索引数据-->
+    <property name="bulkSample2Data">
+        <![CDATA[
+            {"index" : {"_index" : "sample2" }}
+            {"mainContent":"java python javascript\noracle mysql sqlserver"}
+        ]]>
+    </property>
+
 </properties>
