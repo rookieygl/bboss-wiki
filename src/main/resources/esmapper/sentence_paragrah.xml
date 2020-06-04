@@ -1,8 +1,8 @@
 <properties>
 
-    <!--***同段/同句搜索测试案例***-->
+    <!--同段/同句搜索测试案例-->
 
-    <!--创建索引-->
+    <!--创建html分词索引-->
     <property name="createSample1Indice">
         <![CDATA[{
             "settings": {
@@ -52,7 +52,7 @@
         }]]>
     </property>
 
-    <!--测试HTML分词器-->
+    <!--测试html分词效果-->
     <property name="testHtmlAnalyze">
         <![CDATA[{
           "text": ["<p>java python javascript</p><p>oracle mysql sqlserver</p>"],
@@ -68,7 +68,7 @@
         ]]>
     </property>
 
-    <!--创建索引-->
+    <!--创建text分词索引-->
     <property name="createSample2Indice">
         <![CDATA[{
             "settings": {
@@ -120,15 +120,15 @@
         ]]>
     </property>
 
-    <!--测试Text分词器-->
+    <!--测试text分词器-->
     <property name="testTextAnalyze">
         <![CDATA[{
-          "text": ["ava python javascript\noracle mysql sqlserver"],
-          "analyzer": "simple2_mainContent"
+          "text": ["java python javascript\noracle mysql sqlserver"],
+          "analyzer": "simple1_mainContent"
         }]]>
     </property>
 
-    <!--同段搜索-->
+    <!--同段搜索 html和text为同一个查询-->
     <property name="testParagraphQuery">
         <![CDATA[{
             "query": {
@@ -166,4 +166,5 @@
             }
         }]]>
     </property>
+
 </properties>
