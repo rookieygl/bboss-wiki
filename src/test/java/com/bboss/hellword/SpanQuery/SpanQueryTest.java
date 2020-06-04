@@ -53,7 +53,7 @@ public class SpanQueryTest {
 			clientInterface.createIndiceMapping("article", "createArticleIndice");
 			logger.info("创建索引 article 成功");
 		} catch (ElasticSearchException e) {
-			logger.error("创建索引 article 失败 {}", e);
+			logger.error("创建索引 article 执行失败", e);
 		}
 	}
 
@@ -71,7 +71,7 @@ public class SpanQueryTest {
 					.append("\n");//换行符不能省
 			restClient.executeHttp("article/_bulk?refresh", recipedata.toString(), ClientUtil.HTTP_POST);
 		} catch (ElasticSearchException e) {
-			logger.error("article 插入数据失败 {}", e);
+			logger.error("article 插入数据失败", e);
 		}
 		long recipeCount = clientInterface.countAll("article");
 		logger.info("article 当前条数：{}", recipeCount);
@@ -98,7 +98,7 @@ public class SpanQueryTest {
 				logger.info("\n文档_source:{}", metaMap);
 			});
 		} catch (ElasticSearchException e) {
-			logger.error("testSpanTermQuery 执行失败 {}", e);
+			logger.error("testSpanTermQuery 执行失败", e);
 		}
 	}
 
@@ -125,7 +125,7 @@ public class SpanQueryTest {
 				logger.info("\n文档_source:{}" + metaMap);
 			});
 		} catch (ElasticSearchException e) {
-			logger.error("testSpanTermQuery 执行失败 {}", e);
+			logger.error("testSpanTermQuery 执行失败", e);
 		}
 	}
 
@@ -153,7 +153,7 @@ public class SpanQueryTest {
 				logger.info("\n文档_source:{}", metaMap);
 			});
 		} catch (ElasticSearchException e) {
-			logger.error("testSpanNotQuery 执行失败 {}", e);
+			logger.error("testSpanNotQuery 执行失败", e);
 		}
 	}
 
@@ -173,7 +173,7 @@ public class SpanQueryTest {
 			clientInterface.createIndiceMapping("sample1", "createSample1Indice");
 			logger.info("创建索引 sample1 成功");
 		} catch (ElasticSearchException e) {
-			logger.error("创建索引 sample1 faild {}", e);
+			logger.error("创建索引 sample1 执行失败", e);
 		}
 	}
 
@@ -191,7 +191,7 @@ public class SpanQueryTest {
 			recipedata.append("\n");
 			restClient.executeHttp("sample1" + "/_bulk?refresh", String.valueOf(recipedata), ClientUtil.HTTP_POST);
 		} catch (ElasticSearchException e) {
-			logger.error("sample1 插入数据失败 {}", e);
+			logger.error("sample1 插入数据失败", e);
 		}
 		long recipeCount = clientInterface.countAll("sample1");
 		logger.info("sample1 当前条数:{}", recipeCount);
@@ -209,7 +209,7 @@ public class SpanQueryTest {
 			//分词结果
 			logger.info("分词结果:{}", analyzeResult);
 		} catch (ElasticSearchException e) {
-			logger.error("testHtmlAnalyze 执行失败 {}", e);
+			logger.error("testHtmlAnalyze 执行失败", e);
 		}
 	}
 
@@ -237,7 +237,7 @@ public class SpanQueryTest {
 				logger.info("\n文档_source:{}", metaMap);
 			});
 		} catch (ElasticSearchException e) {
-			logger.error("testParagraphQuery 执行失败{}",e);
+			logger.error("testParagraphQuery 执行失败",e);
 		}
 	}
 
@@ -257,7 +257,7 @@ public class SpanQueryTest {
 			clientInterface.createIndiceMapping("sample2", "createSample2Indice");
 			logger.info("创建索引 sample2 成功");
 		} catch (ElasticSearchException e) {
-			logger.error("创建索引 sample2 失败{}", e);
+			logger.error("创建索引 sample2 执行失败", e);
 		}
 	}
 
@@ -275,7 +275,7 @@ public class SpanQueryTest {
 					.append("\n");
 			restClient.executeHttp("sample2" + "/_bulk?refresh", recipedata.toString(), ClientUtil.HTTP_POST);
 		} catch (ElasticSearchException e) {
-			logger.error("sample2 插入数据失败，请检查错误日志");
+			logger.error("sample2 插入数据失败",e);
 		}
 		long recipeCount = clientInterface.countAll("sample2");
 		logger.info("sample2 当前条数：{}", recipeCount);
@@ -292,7 +292,7 @@ public class SpanQueryTest {
 			//分词结果
 			logger.info("分词结果:{}", analyzeResult);
 		} catch (ElasticSearchException e) {
-			logger.error("testTextAnalyze 执行失败{}", e);
+			logger.error("testTextAnalyze 执行失败", e);
 		}
 	}
 
@@ -320,7 +320,7 @@ public class SpanQueryTest {
 				logger.info("\n文档_source:{}", metaMap);
 			});
 		} catch (ElasticSearchException e) {
-			logger.error("testParagraphQuery 执行失败{}", e);
+			logger.error("testParagraphQuery 执行失败", e);
 		}
 	}
 }
