@@ -1,8 +1,8 @@
 <properties>
 
-    <!--***同段/同句搜索测试案例***-->
+    <!--同段/同句搜索测试案例-->
 
-    <!--创建索引-->
+    <!--创建html分词索引-->
     <property name="createSample1Indice">
         <![CDATA[{
             "settings": {
@@ -52,14 +52,13 @@
         }]]>
     </property>
 
-    <!--测试分词效果-->
-    <property name="testIndexAnalyze">
+    <!--测试html分词效果-->
+    <property name="testHtmlAnalyze">
         <![CDATA[{
           "text": ["<p>java python javascript</p><p>oracle mysql sqlserver</p>"],
           "analyzer": "simple1_mainContent"
         }]]>
     </property>
-
 
     <!--添加索引数据-->
     <property name="bulkSample1Data">
@@ -69,46 +68,7 @@
         ]]>
     </property>
 
-    <!--同段搜索-->
-    <property name="testParagraphQuery">
-        <![CDATA[{
-            "query": {
-                "span_not": {
-                  "include": {
-                    "span_near": {
-                      "clauses": [
-                        {
-                          "span_term": {
-                            "mainContent": {
-                              "value": #[spanTermValue1]
-                            }
-                          }
-                        },
-                        {
-                          "span_term": {
-                            "mainContent": {
-                              "value": #[spanTermValue2]
-                            }
-                          }
-                        }
-                      ],
-                      "slop": #[slop],
-                      "in_order": false
-                    }
-                  },
-                  "exclude": {
-                    "span_term": {
-                      "mainContent": {
-                        "value": #[queryType]
-                      }
-                    }
-                  }
-                }
-            }
-        }]]>
-    </property>
-
-    <!--创建索引-->
+    <!--创建text分词索引-->
     <property name="createSample2Indice">
         <![CDATA[{
             "settings": {
@@ -158,6 +118,53 @@
             {"index" : {"_index" : "sample2" }}
             {"mainContent":"java python javascript\noracle mysql sqlserver"}
         ]]>
+    </property>
+
+    <!--测试text分词器-->
+    <property name="testTextAnalyze">
+        <![CDATA[{
+          "text": ["java python javascript\noracle mysql sqlserver"],
+          "analyzer": "simple1_mainContent"
+        }]]>
+    </property>
+
+    <!--同段搜索 html和text为同一个查询-->
+    <property name="testParagraphQuery">
+        <![CDATA[{
+            "query": {
+                "span_not": {
+                  "include": {
+                    "span_near": {
+                      "clauses": [
+                        {
+                          "span_term": {
+                            "mainContent": {
+                              "value": #[spanTermValue1]
+                            }
+                          }
+                        },
+                        {
+                          "span_term": {
+                            "mainContent": {
+                              "value": #[spanTermValue2]
+                            }
+                          }
+                        }
+                      ],
+                      "slop": #[slop],
+                      "in_order": false
+                    }
+                  },
+                  "exclude": {
+                    "span_term": {
+                      "mainContent": {
+                        "value": #[queryType]
+                      }
+                    }
+                  }
+                }
+            }
+        }]]>
     </property>
 
 </properties>

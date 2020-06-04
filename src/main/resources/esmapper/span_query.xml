@@ -1,8 +1,8 @@
 <properties>
 
-    <!--***SpanQuery测试案例***-->
+    <!--SpanQuery测试案例-->
 
-    <!--创建索引-->
+    <!--创建SpanQuery测试索引-->
     <property name="createArticleIndice">
         <![CDATA[{
             "settings" : {
