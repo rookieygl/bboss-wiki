@@ -69,12 +69,15 @@ public class SpanQueryTest {
 			StringBuilder recipedata = new StringBuilder();
 			recipedata.append(esInfo.getTemplate().trim())
 					.append("\n");//换行符不能省
+			//插入数据
 			restClient.executeHttp("article/_bulk?refresh", recipedata.toString(), ClientUtil.HTTP_POST);
+
+			//统计当前索引数据
+			long recipeCount = clientInterface.countAll("article");
+			logger.info("article 当前条数：{}", recipeCount);
 		} catch (ElasticSearchException e) {
 			logger.error("article 插入数据失败", e);
 		}
-		long recipeCount = clientInterface.countAll("article");
-		logger.info("article 当前条数：{}", recipeCount);
 	}
 
 	/**
