@@ -90,7 +90,7 @@ public class SpanQueryTest {
 			//封装请求参数
 			Map<String, String> queryParams = new HashMap<>(5);
 			queryParams.put("spanTermValue", "red");
-			//Bboss执行查询DSL
+			//bboss执行查询DSL
 			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("article/_search?search_type=dfs_query_then_fetch",
 					"testSpanTermQuery",//DSL模板ID
 					queryParams,//查询参数
@@ -118,7 +118,7 @@ public class SpanQueryTest {
 			queryParams.put("spanTermValue2", "brown");
 			queryParams.put("slop", "0");
 
-			//Bboss执行查询DSL
+			//bboss执行查询DSL
 			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("article/_search?search_type=dfs_query_then_fetch",
 					"testS_panNearQuery",//DSL模板ID
 					queryParams,//查询参数
@@ -146,7 +146,7 @@ public class SpanQueryTest {
 			queryParams.put("slop", "1");
 			queryParams.put("spanNotValue", "red");
 
-			//Bboss执行查询DSL
+			//bboss执行查询DSL
 			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("article/_search?search_type=dfs_query_then_fetch",
 					"testSpanNotQuery",//DSL模板ID
 					queryParams,//查询参数
@@ -190,14 +190,16 @@ public class SpanQueryTest {
 			ClientInterface restClient = ElasticSearchHelper.getRestClientUtil();//插入数据用RestClient
 			ESInfo esInfo = clientInterface.getESInfo("bulkSample1Data");//获取插入数据
 			StringBuilder recipedata = new StringBuilder();
-			recipedata.append(esInfo.getTemplate().trim());
-			recipedata.append("\n");
+			recipedata.append(esInfo.getTemplate().trim())
+						.append("\n");
 			restClient.executeHttp("sample1" + "/_bulk?refresh", String.valueOf(recipedata), ClientUtil.HTTP_POST);
+
+			//统计当前索引数据
+			long recipeCount = clientInterface.countAll("sample1");
+			logger.info("sample1 当前条数:{}", recipeCount);
 		} catch (ElasticSearchException e) {
 			logger.error("sample1 插入数据失败", e);
 		}
-		long recipeCount = clientInterface.countAll("sample1");
-		logger.info("sample1 当前条数:{}", recipeCount);
 	}
 
 
@@ -230,7 +232,7 @@ public class SpanQueryTest {
 			queryParams.put("slop", "3");
 			queryParams.put("queryType", "paragraph");
 
-			//Bboss执行查询DSL
+			//bboss执行查询DSL
 			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("sample1" + "/_search?search_type=dfs_query_then_fetch",
 					"testParagraphQuery",//DSL模板ID
 					queryParams,//查询参数
@@ -277,11 +279,13 @@ public class SpanQueryTest {
 			recipedata.append(esInfo.getTemplate().trim())
 					.append("\n");
 			restClient.executeHttp("sample2" + "/_bulk?refresh", recipedata.toString(), ClientUtil.HTTP_POST);
+
+			//统计当前索引数据
+			long recipeCount = clientInterface.countAll("sample2");
+			logger.info("sample2 当前条数：{}", recipeCount);
 		} catch (ElasticSearchException e) {
 			logger.error("sample2 插入数据失败",e);
 		}
-		long recipeCount = clientInterface.countAll("sample2");
-		logger.info("sample2 当前条数：{}", recipeCount);
 	}
 
 	/**
@@ -313,7 +317,7 @@ public class SpanQueryTest {
 			queryParams.put("slop", "3");
 			queryParams.put("queryType", "paragraph");
 
-			//Bboss执行查询DSL
+			//bboss执行查询DSL
 			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("sample2" + "/_search?search_type=dfs_query_then_fetch",
 					"testParagraphQuery",//DSL模板ID
 					queryParams,//查询参数

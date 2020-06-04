@@ -2,6 +2,7 @@ package com.bboss.hellword.FunctionScore;
 
 import com.bboss.hellword.po.Item;
 import com.bboss.hellword.po.Student;
+import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
 import org.frameworkset.elasticsearch.client.ClientInterface;
@@ -28,19 +29,22 @@ public class FunctionScoreTest {
 
     private ClientInterface clientInterface;//bboss dsl工具
 
-    private String functionScoreDSLPath = "esmapper/function_score.xml";
-
     /**
      * 创建student索引
      */
     @Test
     public void dropAndCreateStudentIndice() {
-        clientInterface = ElasticSearchHelper.getConfigRestClientUtil(functionScoreDSLPath);
-        /*检查索引是否存在，存在就删除重建*/
-        if (clientInterface.existIndice("student")) {
-            clientInterface.dropIndice("student");
+        try {
+            clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/function_score.xml");
+            /*检查索引是否存在，存在就删除重建*/
+            if (clientInterface.existIndice("student")) {
+                clientInterface.dropIndice("student");
+            }
+            //创建索引
+            clientInterface.createIndiceMapping("student", "createStudentIndice");
+        } catch (ElasticSearchException e) {
+            logger.error("创建索引 student 执行失败", e);
         }
-        clientInterface.createIndiceMapping("student", "createStudentIndice");
     }
 
     /**
@@ -48,11 +52,17 @@ public class FunctionScoreTest {
      */
     @Test
     public void dropAndCreateItemsIndice() {
-        clientInterface = ElasticSearchHelper.getConfigRestClientUtil(functionScoreDSLPath);
-        if (clientInterface.existIndice("items")) {
-            clientInterface.dropIndice("items");
+        try {
+            clientInterface = ElasticSearchHelper.getConfigRestClientUtil("esmapper/function_score.xml");
+            if (clientInterface.existIndice("items")) {
+                clientInterface.dropIndice("items");
+            }
+            //创建索引
+            clientInterface.createIndiceMapping("items", "createItemsIndice");
+            logger.info("创建索引 items 成功");
+        } catch (ElasticSearchException e) {
+            logger.error("创建索引 items 执行失败", e);
         }
-        clientInterface.createIndiceMapping("items", "createItemsIndice");
     }
 
     /**
@@ -60,7 +70,7 @@ public class FunctionScoreTest {
      */
     @Test
     public void insertItemsData() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
+        clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
         List<Item> items = new ArrayList<>();
         Item item1 = new Item();
         Item item2 = new Item();
@@ -92,10 +102,16 @@ public class FunctionScoreTest {
         items.add(item2);
         items.add(item3);
         items.add(item4);
-        //强制refresh，以便能够实时执行后面的检索操作，生产环境去掉"refresh=true"
-        String response = clientInterface.addDocuments("items", "item", items, "refresh=true");
-        logger.debug(response);
+        try {
+            //强制refresh，以便能够实时执行后面的检索操作，生产环境去掉"refresh=true"
+            clientInterface.addDocuments("items", "item", items, "refresh=true");
 
+            //统计当前索引数据
+            long recipeCount = clientInterface.countAll("article");
+            logger.info("items 当前条数：{}", recipeCount);
+        } catch (ElasticSearchException e) {
+            logger.error("items 插入数据失败", e);
+        }
     }
 
     /**
@@ -103,22 +119,27 @@ public class FunctionScoreTest {
      */
     @Test
     public void testFieldValueFactor() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        // 指定商品类目作为过滤器
-        queryMap.put("titleName", "雨伞");
-        // 指定需要field_value_factor运算的参数
-        queryMap.put("valueFactorName", "sales");
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            // 指定商品类目作为过滤器
+            queryMap.put("titleName", "雨伞");
+            // 指定需要field_value_factor运算的参数
+            queryMap.put("valueFactorName", "sales");
 
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
-
-        // testFieldValueFactor 就是上文定义的dsl模板名，queryMap 为查询条件，Item为实体类
-        ESDatas<Item> esDatast = clientInterface.searchList("items/_search?search_type=dfs_query_then_fetch", "testFieldValueFactor", queryMap, Item.class);
-        List<Item> esCrmOrderStudentList = esDatast.getDatas();
-        logger.debug(esCrmOrderStudentList.toString());
-        System.out.println(esCrmOrderStudentList.toString());
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
+            //bboss执行查询DSL
+            ESDatas<Item> esDatast = clientInterface.searchList("items/_search?search_type=dfs_query_then_fetch",
+                    "testFieldValueFactor", //DSL id
+                    queryMap,//查询条件
+                    Item.class);
+            List<Item> esCrmOrderStudentList = esDatast.getDatas();
+            logger.info(esCrmOrderStudentList.toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testFieldValueFactor 执行失败", e);
+        }
     }
 
     /**
@@ -126,21 +147,30 @@ public class FunctionScoreTest {
      */
     @Test
     public void testRandomScoreDSL() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        // 指定进行random_score运算的字段,这里以id为随机给文档评分
-        // 如果指定seed种子.seed相等返回值顺序相同，默认为null
-        queryMap.put("fieldName", "docId");
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            // 指定进行random_score运算的字段,这里以id为随机给文档评分
 
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
-        // testRanodmScore就是上文定义的dsl模板名，queryMap 为查询条件，Student为实体类
-        ESDatas<Student> esDatast =
-                clientInterface.searchList("student/_search?search_type=dfs_query_then_fetch", "testRanodmScore", queryMap, Student.class);
-        List<Student> esCrmOrderStudentList = esDatast.getDatas();
-        logger.debug(esCrmOrderStudentList.toString());
-        System.out.println(esCrmOrderStudentList.toString());
+            // 如果指定seed种子.seed相等返回值顺序相同，默认为null
+            queryMap.put("fieldName", "docId");
+
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
+
+            //bboss执行查询DSL
+            ESDatas<Student> esDatast =
+                    clientInterface.searchList("items/_search?search_type=dfs_query_then_fetch",
+                            "testRanodmScore",
+                            queryMap,
+                            Student.class);
+            List<Student> esCrmOrderStudentList = esDatast.getDatas();
+            logger.info(esCrmOrderStudentList.toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testRanodmScore 执行失败", e);
+        }
+
     }
 
     /**
@@ -148,26 +178,32 @@ public class FunctionScoreTest {
      */
     @Test
     public void testDecayFunctionsByGeoPonit() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        // 设置理想的商品名字
-        queryMap.put("titleName", "公寓");
-        // origin 原点 设置北京的坐标
-        queryMap.put("originLocation", "40,116");
-        // offset 理想范围
-        queryMap.put("offset", "3km");
-        // scale 衰减临界点 注意该临界点为 origin±(offsetr+scale)
-        queryMap.put("scale", "10km");
-        // 衰减系数 decay 乘以临界处文档的分数
-        queryMap.put("decay", 0.33);
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            // 设置理想的商品名字
+            queryMap.put("titleName", "公寓");
+            // origin 原点 设置北京的坐标
+            queryMap.put("originLocation", "40,116");
+            // offset 理想范围
+            queryMap.put("offset", "3km");
+            // scale 衰减临界点 注意该临界点为 origin±(offsetr+scale)
+            queryMap.put("scale", "10km");
+            // 衰减系数 decay 乘以临界处文档的分数
+            queryMap.put("decay", 0.33);
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
 
-        ESDatas esDatast = clientInterface.searchList("hoses/_search?search_type=dfs_query_then_fetch", "testDecayFunctionsByGeoPonit", queryMap, Object.class);
-        List datas = esDatast.getDatas();
-        logger.debug(datas.toString());
-        System.out.println(datas.toString());
+            //bboss执行查询DSL
+            ESDatas esDatast = clientInterface.searchList("hoses/_search?search_type=dfs_query_then_fetch",
+                    "testDecayFunctionsByGeoPonit",
+                    queryMap,
+                    Object.class);
+            logger.info(esDatast.getDatas().toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testDecayFunctionsByGeoPonit 执行失败", e);
+        }
     }
 
     /**
@@ -175,18 +211,24 @@ public class FunctionScoreTest {
      */
     @Test
     public void testScriptScore() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        queryMap.put("cityName", "北京");
-        queryMap.put("schoolName", "人大附中");
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            queryMap.put("cityName", "北京");
+            queryMap.put("schoolName", "人大附中");
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
 
-        ESDatas<Student> esDatast = clientInterface.searchList("student/_search?search_type=dfs_query_then_fetch", "testScriptScore", queryMap, Student.class);
-        List<Student> esCrmOrderStudentList = esDatast.getDatas();
-        logger.debug(esCrmOrderStudentList.toString());
-        System.out.println(esCrmOrderStudentList.toString());
+            ESDatas<Student> esDatast = clientInterface.searchList("student/_search?search_type=dfs_query_then_fetch",
+                    "testScriptScore",
+                    queryMap,
+                    Student.class);
+            List<Student> esCrmOrderStudentList = esDatast.getDatas();
+            logger.info(esCrmOrderStudentList.toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testScriptScore 执行失败", e);
+        }
     }
 
     /**
@@ -195,29 +237,44 @@ public class FunctionScoreTest {
      */
     @Test
     public void testCreateSchoolScoreScript() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        //创建评分脚本函数testScriptScore
-        clientInterface.executeHttp("_scripts/schoolScoreScript", "schoolScoreScript",
-                ClientInterface.HTTP_POST);
-        //获取刚才创建评分脚本函数testScriptScore
-        String schoolScoreScript = clientInterface.executeHttp("_scripts/schoolScoreScript",
-                ClientInterface.HTTP_GET);
-        System.out.println(schoolScoreScript);
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            //创建评分脚本函数testScriptScore
+            clientInterface.executeHttp("_scripts/schoolScoreScript",
+                    "schoolScoreScript",
+                    ClientInterface.HTTP_POST);
+            //获取刚才创建评分脚本函数testScriptScore
+            String schoolScoreScript = clientInterface.executeHttp("_scripts/schoolScoreScript",
+                    ClientInterface.HTTP_GET);
+            logger.info(schoolScoreScript);
+        } catch (ElasticSearchException e) {
+            logger.error("schoolScoreScript 执行失败", e);
+        }
     }
 
+    /**
+     * 测试schoolScore
+     */
     @Test
     public void testScriptScoreByIncloudScript() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        queryMap.put("cityName", "北京");
-        queryMap.put("schoolName", "人大附中");
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            queryMap.put("cityName", "北京");
+            queryMap.put("schoolName", "人大附中");
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
 
-        ESDatas<Student> esDatas = clientInterface.searchList("student/_search?search_type=dfs_query_then_fetch", "testScriptScoreByIncloudScript", queryMap, Student.class);
-        List<Student> students = esDatas.getDatas();
-        System.out.println(students);
+            ESDatas<Student> esDatas = clientInterface.searchList("student/_search?search_type=dfs_query_then_fetch",
+                    "testScriptScoreByIncloudScript",
+                    queryMap,
+                    Student.class);
+            List<Student> students = esDatas.getDatas();
+            logger.info(students.toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testScriptScoreByIncloudScript 执行失败", e);
+        }
     }
 
     /**
@@ -225,21 +282,26 @@ public class FunctionScoreTest {
      */
     @Test
     public void testHellFunctionScore() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        queryMap.put("features", "停车位");
-        queryMap.put("valueFactorFieldName", "score");
-        queryMap.put("originLocation", "40,116");
-        queryMap.put("scale", "10km");
-        queryMap.put("docId", 15);
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            queryMap.put("features", "停车位");
+            queryMap.put("valueFactorFieldName", "score");
+            queryMap.put("originLocation", "40,116");
+            queryMap.put("scale", "10km");
+            queryMap.put("docId", 15);
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
 
-        ESDatas esDatast = clientInterface.searchList("hell/_search?search_type=dfs_query_then_fetch", "testHellFunctionScore", queryMap, Object.class);
-        List datas = esDatast.getDatas();
-        logger.debug(datas.toString());
-        System.out.println(datas.toString());
+            ESDatas esDatast = clientInterface.searchList("hell/_search?search_type=dfs_query_then_fetch",
+                    "testHellFunctionScore",
+                    queryMap,
+                    Object.class);
+            logger.info(esDatast.getDatas().toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testHellFunctionScore 执行失败", e);
+        }
     }
 
     /**
@@ -248,14 +310,19 @@ public class FunctionScoreTest {
      */
     @Test
     public void testCreateSinaScript() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        //创建评分脚本函数testScriptScore
-        clientInterface.executeHttp("_scripts/sinaScript", "sinaScript",
-                ClientInterface.HTTP_POST);
-        //获取刚才创建评分脚本函数testScriptScore
-        String schoolScoreScript = clientInterface.executeHttp("_scripts/sinaScript",
-                ClientInterface.HTTP_GET);
-        System.out.println(schoolScoreScript);
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            //创建评分脚本函数testScriptScore
+            clientInterface.executeHttp("_scripts/sinaScript",
+                    "sinaScript",
+                    ClientInterface.HTTP_POST);
+            //获取刚才创建评分脚本函数testScriptScore
+            String schoolScoreScript = clientInterface.executeHttp("_scripts/sinaScript",
+                    ClientInterface.HTTP_GET);
+            logger.info(schoolScoreScript);
+        } catch (ElasticSearchException e) {
+            logger.error("sinaScript 执行失败", e);
+        }
     }
 
     /**
@@ -263,24 +330,29 @@ public class FunctionScoreTest {
      */
     @Test
     public void testSinaFunctionScore() {
-        clientInterface = bbossESStarter.getConfigRestClient(functionScoreDSLPath);
-        Map<String, Object> queryMap = new HashMap<>();
-        queryMap.put("content", "刘亦菲");
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/function_score.xml");
+            Map<String, Object> queryMap = new HashMap<>();
+            queryMap.put("content", "刘亦菲");
 
-        Date date = new Date(); //获取当前的系统时间。
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); //使用了默认的格式创建了一个日期格式化对象。
-        String time = dateFormat.format(date); //可以把日期转换转指定格式的字符串
+            Date date = new Date(); //获取当前的系统时间。
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); //使用了默认的格式创建了一个日期格式化对象。
+            String time = dateFormat.format(date); //可以把日期转换转指定格式的字符串
 
-        queryMap.put("createDate", time);
-        queryMap.put("valueFactorFieldName", "like_count");
-        queryMap.put("time", new Date().getTime());
-        // 设置分页
-        queryMap.put("from", 0);
-        queryMap.put("size", 10);
+            queryMap.put("createDate", time);
+            queryMap.put("valueFactorFieldName", "like_count");
+            queryMap.put("time", new Date().getTime());
+            // 设置分页
+            queryMap.put("from", 0);
+            queryMap.put("size", 10);
 
-        ESDatas esDatast = clientInterface.searchList("xinlang/_search?search_type=dfs_query_then_fetch", "testSinaFunctionScore", queryMap, Object.class);
-        List datas = esDatast.getDatas();
-        logger.debug(datas.toString());
-        System.out.println(datas.toString());
+            ESDatas esDatast = clientInterface.searchList("xinlang/_search?search_type=dfs_query_then_fetch",
+                    "testSinaFunctionScore",
+                    queryMap,
+                    Object.class);
+            logger.info(esDatast.getDatas().toString());
+        } catch (ElasticSearchException e) {
+            logger.error("testSinaFunctionScore 执行失败", e);
+        }
     }
 }

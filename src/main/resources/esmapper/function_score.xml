@@ -17,7 +17,6 @@
                 "index.refresh_interval": "5s"
             },
             "mappings": {
-              "student" : {
                 "properties" : {
                   ## 参与field_value_factor或者gauss运算等，字符类型只能是number
                   "age" : {
@@ -51,7 +50,6 @@
                     "type" : "long"
                   }
                 }
-              }
             }
         }]]>
     </property>
@@ -67,31 +65,29 @@
                 "index.refresh_interval": "5s"
             },
             "mappings" : {
-                "item" : {
-                    "properties" : {
-                        "docId" : {
-                            "type" : "long"
-                        },
-                        "name" : {
-                            "type" : "text",
-                            "fields" : {
-                              "keyword" : {
-                                "type" : "keyword",
-                                "ignore_above" : 256
-                              }
-                            }
-                        },
-                        "sales" : {
-                            "type" : "long"
-                        },
-                        "title" : {
-                            "type" : "text",
-                            "fields" : {
-                              "keyword" : {
-                                "type" : "keyword",
-                                "ignore_above" : 256
-                              }
-                            }
+                "properties" : {
+                    "docId" : {
+                        "type" : "long"
+                    },
+                    "name" : {
+                        "type" : "text",
+                        "fields" : {
+                          "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                          }
+                        }
+                    },
+                    "sales" : {
+                        "type" : "long"
+                    },
+                    "title" : {
+                        "type" : "text",
+                        "fields" : {
+                          "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                          }
                         }
                     }
                 }
