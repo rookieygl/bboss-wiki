@@ -1,31 +1,33 @@
-#目录正常写 dir/ 
-#.filename 为file 有的目录也带点 /区分.git/ 
-#dir/filename 过滤单个目录
+# 过滤写法
+# 文件 filepath 直接写文件路径（相对路径也可以）
+# 文件夹 /path/ 过滤文件夹
 #!取反
 
 ###保留目录
 !**/src/main/**
 !**/src/test/**
 
-
-###File
-HELP.md
-mvnw
-
-###Dir
-/.git/
+#工程目录
 /target/
 /.mvn/
 
-###IntelliJ IDEA
-.idea
+#IntelliJ IDEA
+/.idea/
 *.iws
 *.iml
 *.ipr
 *.mvnw*
+HELP.md
 
+#git
+/.git/
 
-###STS
+#gradle
+/gradle/wrapper/
+/gradlew
+/gradlew.bat
+
+#STS
 .apt_generated
 .classpath
 .factorypath
@@ -34,17 +36,14 @@ mvnw
 .springBeans
 .sts4-cache
 
-
-###NetBeans
+#NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 build/
-.mvn/
 
-### VS Code ###
+# vue
 .vscode/
-.gitattributes
-.gitattributes
+/node_modules/

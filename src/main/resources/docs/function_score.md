@@ -68,7 +68,7 @@ function_score的作用就是综合各个函数的得分，因此注意两点：
 
 在开始之前先在工程中创建Bboss的DSL配置文件，本文中涉及的配置都会加到里面：resources/esmapper/function_score.xml（Git地址：https://github.com/rookieygl/bboss-wiki/blob/master/src/main/resources/esmapper/function_score.xml）。
 
-### 2.1.1 定义索引-商品索引mapping定义和配置
+### 2.1.1 创建索引
 
 在配置文件中添加商品索引的mapping定义createItemsIndice
 
@@ -122,7 +122,7 @@ function_score的作用就是综合各个函数的得分，因此注意两点：
 </property>
 ```
 
-### 2.1.2 创建索引-加载配置文件并创建索引
+bboss执行上述模板：
 
 ```java
    /**
@@ -144,7 +144,7 @@ function_score的作用就是综合各个函数的得分，因此注意两点：
     }
 ```
 
-### 2.1.3 准备测试数据-批量添加商品数据
+### 2.1.2 添加索引数据
 
 通过以下代码向item索引中添加不同的测试数据：
 
@@ -282,7 +282,7 @@ Score = Score + log (1 + 0.1 * sales)
 $$
 factor为打分系数，和sales相乘，modifier为评分函数，boost_mode决定了评分函数和查询分数的组合方式
 
-执行上面的dsl：
+bboss执行上述模板：
 
 ```java
    /**
@@ -359,7 +359,7 @@ Item{title='雨伞', name='天堂伞', sales=500}]
 </property>
 ```
 
-执行上面的dsl：
+bboss执行上述模板：
 
 ```java
    /**
@@ -497,7 +497,7 @@ Item{title='雨伞', name='天堂伞', sales=500}]
 </property>
 ```
 
-执行上面的dsl：
+bboss执行上述模板：
 
 ```java
    /**
@@ -580,7 +580,7 @@ return doc ['school.keyword'].value =='人大附中' ? 10 : 1.0
 </property>
 ```
 
-执行上面的dsl：
+bboss执行上述模板：
 
 ```java
    /**
@@ -684,7 +684,7 @@ return doc ['school.keyword'].value =='人大附中' ? 10 : 1.0
 </property>
 ```
 
-执行检索操作：
+bboss执行上述模板：
 
 ```java
   /**
@@ -781,7 +781,7 @@ return doc ['school.keyword'].value =='人大附中' ? 10 : 1.0
 </property>
 ```
 
-餐厅检索的java实现：
+bboss执行上述模板：
 
 ```java
   /**
@@ -871,7 +871,7 @@ return doc ['school.keyword'].value =='人大附中' ? 10 : 1.0
 _score * gauss (create_date, $now, "1d", "6d") * log (1 + 0.1 * like_count) * is_recommend ? 1.5 : 1.0
 ```
 
-执行上面的dsl：
+bboss执行上述模板：
 
 ```
  /**

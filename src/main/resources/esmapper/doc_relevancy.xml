@@ -1,0 +1,157 @@
+<properties>
+
+    <!-- elasticsearch 文档相关度 -->
+
+
+    <property name="closeTF" desc = "关闭词频TF">
+        <![CDATA[{
+            "mappings": {
+                "properties": {
+                  "text": {
+                    "type": "keyword",
+                    "index_options": "docs"
+                  }
+                }
+            }
+        }]]>
+    </property>
+
+    <property name="closeNorms" desc = "关闭字段长度归一值">
+        <![CDATA[{
+            "mappings": {
+              "properties": {
+                "text": {
+                  "type": "text",
+                  "norms":  false
+                }
+              }
+
+            }
+        }]]>
+    </property>
+
+    <property name="bm25Index" desc = "创建索引，指定字段为BM25评分算法">
+        <![CDATA[{
+            "mappings": {
+                "properties": {
+                  "title": {
+                    "type": "text",
+                    "similarity": "BM25"
+                  },
+                  "body": {
+                    "type": "text",
+                    "similarity": "boolean"
+                  }
+                }
+            }
+        }]]>
+    </property>
+
+    <property name="setBM25" desc = "设置BM25的参数">
+        <![CDATA[{
+            "settings": {
+                "similarity": {
+                  "my_bm25": {
+                    "type": "BM25",
+                    "k1":2,
+                    "b": 0
+                  }
+                }
+            },
+            "mappings": {
+                "properties": {
+                  "title": {
+                    "type": "text",
+                    "similarity": "my_bm25"
+                  },
+                  "body": {
+                    "type": "text",
+                    "similarity": "BM25"
+                  }
+                }
+            }
+        }]]>
+    </property>
+
+    <property name="createExplainIndex" desc = "创建explain测试索引">
+        <![CDATA[{
+            "mappings": {
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "author": {
+                  "type": "keyword"
+                },
+                "title": {
+                  "type": "text",
+                  "analyzer": "ik_smart"
+                },
+                "content": {
+                  "type": "text",
+                  "analyzer": "ik_max_word",
+                  "search_analyzer": "ik_smart"
+                },
+                "tag": {
+                  "type": "keyword"
+                },
+                "influence": {
+                  "type": "integer_range"
+                },
+                "createAt": {
+                  "type": "date",
+                  "format": "yyyy-MM-dd HH:mm:ss"
+                }
+              }
+            }
+        }]]>
+    </property>
+
+    <property name="blukExplainIndex" desc = "导入ExplainI索引数据">
+        <![CDATA[
+            {"index":{"_index":"explain_index","_id":"1"}}
+            {"id":1,"author":"bboss开源引擎","title":"es的相关度","content":"这是关于es的相关度的文章","tag":[1,2,3],"influence":{"gte":10,"lte":12},"createAt":"2020-05-24 10:56:00"}
+            {"index":{"_index":"explain_index","_id":"2"}}
+            {"id":2,"author":"bboss开源引擎","title":"相关度","content":"这是关于相关度的文章","tag":[2,3,4],"influence":{"gte":12,"lte":15},"createAt":"2020-05-23 10:56:00"}
+            {"index":{"_index":"explain_index","_id":"3"}}
+            {"id":3,"author":"bboss开源引擎","title":"es","content":"这是关于关于es和编程的必看文章","tag":[2,3,4],"influence":{"gte":12,"lte":15},"createAt":"2020-05-22 10:56:00"}
+            {"index":{"_index":"explain_index","_id":"4"}}
+            {"id":4,"author":"bboss开源","title":"关注boss，系统学习es","content":"这是关于es的文章，介绍了一点相关度的知识","tag":[1,2,3],"influence":{"gte":10,"lte":15},"createAt":"2020-05-24 10:56:00"}
+        ]]>
+    </property>
+
+    <property name="testExplain" desc = "测试explain查看ES查询执行计划">
+        <![CDATA[{
+             "explain": true,
+              "query": {
+                "match": {
+                  "title": "es的相关度"
+                }
+              }
+        }]]>
+    </property>
+
+
+    <property name="" desc = "">
+        <![CDATA[{
+
+        }]]>
+    </property>
+
+    <property name="" desc = "">
+        <![CDATA[{
+
+        }]]>
+    </property>
+
+    <property name="" desc = "">
+        <![CDATA[{
+
+        }]]>
+    </property>
+    <property name="" desc = "">
+        <![CDATA[{
+
+        }]]>
+    </property>
+</properties>
