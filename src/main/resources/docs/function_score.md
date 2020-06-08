@@ -78,48 +78,51 @@ function_score的作用就是综合各个函数的得分，因此注意两点：
      参考官方文档
      https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html
     -->
-    <!--
-    创建商品索引items mappings dsl
-    -->
-<property name="createItemsIndice">
+   <!--创建索引-->
+    <property name="createStudentIndice">
         <![CDATA[{
             "settings": {
                 "number_of_shards": 1,
                 "number_of_replicas": 0,
                 "index.refresh_interval": "5s"
             },
-            "mappings" : {
-                "item" : {
-                    "properties" : {
-                        "docId" : {
-                            "type" : "long"
-                        },
-                        "name" : {
-                            "type" : "text",
-                            "fields" : {
-                              "keyword" : {
-                                "type" : "keyword",
-                                "ignore_above" : 256
-                              }
-                            }
-                        },
-                        "sales" : {
-                            "type" : "long"
-                        },
-                        "title" : {
-                            "type" : "text",
-                            "fields" : {
-                              "keyword" : {
-                                "type" : "keyword",
-                                "ignore_above" : 256
-                              }
-                            }
-                        }
+            "mappings": {
+                "properties" : {
+                  ## 参与field_value_factor或者gauss运算等，字符类型只能是number
+                  "age" : {
+                    "type" : "long"
+                  },
+                  "city" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
                     }
+                  },
+                  "creat_date" : {
+                    "type" : "date"
+                  },
+                  "docId" : {
+                    "type" : "long"
+                  },
+                  "name" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "phone" : {
+                    "type" : "long"
+                  }
                 }
             }
         }]]>
-</property>
+    </property>
 ```
 
 bboss执行上述模板：
