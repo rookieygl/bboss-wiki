@@ -20,9 +20,9 @@ import java.util.*;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
-public class FunctionScoreTest {
+public class FunctionScore {
 
-    private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);//日志
+    private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
 
     @Autowired
     private BBossESStarter bbossESStarter;//bboss启动器

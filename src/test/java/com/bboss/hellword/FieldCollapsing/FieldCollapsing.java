@@ -1,6 +1,6 @@
 package com.bboss.hellword.FieldCollapsing;
 
-import com.bboss.hellword.FunctionScore.FunctionScoreTest;
+import com.bboss.hellword.FunctionScore.FunctionScore;
 import com.bboss.hellword.po.RecipesPo;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
@@ -19,12 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +26,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
-public class FieldCollapsingTest {
+public class FieldCollapsing {
 
-    private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);//日志
+    private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
 
     @Autowired
     private BBossESStarter bbossESStarter;//bboss依赖

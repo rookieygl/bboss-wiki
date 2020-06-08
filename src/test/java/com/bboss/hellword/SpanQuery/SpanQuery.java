@@ -1,13 +1,12 @@
 package com.bboss.hellword.SpanQuery;
 
-import com.bboss.hellword.FunctionScore.FunctionScoreTest;
+import com.bboss.hellword.FunctionScore.FunctionScore;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
 import org.frameworkset.elasticsearch.client.ClientInterface;
 import org.frameworkset.elasticsearch.client.ClientUtil;
 import org.frameworkset.elasticsearch.entity.ESDatas;
-import org.frameworkset.elasticsearch.entity.MapRestResponse;
 import org.frameworkset.elasticsearch.entity.MetaMap;
 import org.frameworkset.elasticsearch.template.ESInfo;
 import org.junit.Test;
@@ -30,9 +29,9 @@ import java.util.Map;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
-public class SpanQueryTest {
+public class SpanQuery {
 
-	private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);//日志
+	private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
 
 	@Autowired
 	private BBossESStarter bbossESStarter;//bboss启动器
