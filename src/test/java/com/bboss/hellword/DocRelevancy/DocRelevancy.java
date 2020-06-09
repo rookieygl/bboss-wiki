@@ -1,6 +1,7 @@
 package com.bboss.hellword.DocRelevancy;
 
-import com.bboss.hellword.FunctionScore.FunctionScoreTest;
+import com.bboss.hellword.FunctionScore.FunctionScore;
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
@@ -17,9 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * @USER: rookie_ygl
  * @DATE: 2020/6/6
@@ -29,7 +27,7 @@ import java.util.Map;
 @SpringBootTest
 @RunWith(SpringRunner.class)
 public class DocRelevancy {
-    private Logger logger = LoggerFactory.getLogger(FunctionScoreTest.class);//日志
+    private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
 
     @Autowired
     private BBossESStarter bbossESStarter;//bboss启动器
@@ -127,7 +125,7 @@ public class DocRelevancy {
     }
 
     /**
-     * 添加article索引数据
+     * 添加explain索引数据
      */
     @Test
     public void blukExplainIndex() {
@@ -164,20 +162,8 @@ public class DocRelevancy {
             //ES返回结果遍历
 
             metaMapESDatas.getDatas().forEach(metaMap -> {
-                StringBuffer explainDetails = new StringBuffer();
-                metaMap.getExplanation().getDetails().forEach(explanation -> {
-                    explainDetails.append("{")
-                            .append("\"value:\"")
-                            .append( explanation.getValue())
-                            .append(",")
-                            .append("\"description:\"")
-                            .append(explanation.getDescription())
-                            .append(",");
-                });
-                logger.info("\n文档_source:{} \nexplain:\nvalue:{} \ndescription:{} \ndetails:{}", metaMap,metaMap.
-                        getExplanation().getValue(),
-                        metaMap.getExplanation().getDescription(),
-                        explainDetails
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
                 );
             });
         } catch (ElasticSearchException e) {
@@ -185,5 +171,27 @@ public class DocRelevancy {
         }
     }
 
+    /**
+     * 测试Boost权重
+     */
+    @Test
+    public void testBoost() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
 
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testBoost",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
 }

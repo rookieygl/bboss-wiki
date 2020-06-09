@@ -131,10 +131,28 @@
         }]]>
     </property>
 
-
-    <property name="" desc = "">
+    <property name="testBoost" desc = "测试Boost权重">
         <![CDATA[{
-
+            "explain": true,
+            "query": {
+            "bool": {
+              "must": [
+                {
+                  "match": {
+                    "title": {
+                      "query": "es",
+                      "boost": 2
+                    }
+                  }
+                },
+                {
+                  "match": {
+                    "content": "es"
+                  }
+                }
+              ]
+            }
+            }
         }]]>
     </property>
 

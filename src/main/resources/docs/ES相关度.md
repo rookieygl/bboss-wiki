@@ -241,7 +241,11 @@ score(q,d)  =
 
 <center>BM25公式</center>
 
-**该公式"."的前部分就是 IDF 的算法，后部分就是 TF+Norm 的算法。**
+**该公式"."的前部分就是 IDF 的算法，后部分就是 DF和字段长度归一值Norm的综合公式**。该公式可以简化为:
+$$
+_score=idf*f(df,norm)
+$$
+
 
 ### 2.7.2.TF/IDF与BM25的词频饱和度
 
@@ -453,8 +457,8 @@ bboss执行上述模板：
 bboss执行上述模板：
 
 ```java
- /**
-     * 添加article索引数据
+    /**
+     * 添加explain索引数据
      */
     @Test
     public void blukExplainIndex() {
@@ -475,7 +479,6 @@ bboss执行上述模板：
             logger.error("explain_index 插入数据失败", e);
         }
     }
-
 ```
 
 执行完上述两个测试用例，你就用这个创建好的索引和索引数据，进行下一步的测试。
@@ -506,48 +509,142 @@ https://esdoc.bbossgroups.com/#/bulkProcessor
 bboss执行上述模板：
 
 ```java
+ /**
+     * 测试explain查看ES查询执行计划
+     */
+    @Test
+    public void testExplain() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
 
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testExplain",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
 ```
 
 根据explain分析结果，我们简单分析下文档1的相关性算分过程，去理解ES的相关性算分：
 
 上述查询DSL中： **"title": "es的相关度"**这个查询条件，根据我们采用的是**ik_smart**分词器，会被分词为**es**、**的**、**相关**、**度**四个词元去查询，四个词元的总分就是该查询条件的总分。我们以**es**词元来讲解explain评分结果。
 
-### 3.4.1.文档1的explain结果
+### 3.4.1.文档的explain结果
+
+以id为1的文档作为案例，解析如下
 
 ```java
-"value" : 2.5933092,
-"description" : "sum of:",
-"details" : [...]
+文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
+_explanation:
+{
+    "value" : 2.5933092,
+    "description" : "sum of:",
+    "details" : [
+        {
+            "value" : 0.31387398,
+            "description" : "weight(title:es in 0) [PerFieldSimilarity], result of:",
+            "details" : [
+                {
+                    "value" : 0.31387398,
+                    "description" : "score(freq=1.0), product of:",
+                    "details" : [
+                        {
+                            "value" : 2.2,
+                            "description" : "boost",
+                            "details" : [ ]
+                        },
+                        {
+                            "value" : 0.35667494,
+                            "description" : "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
+                            "details" : [
+                                {
+                                    "value" : 3,
+                                    "description" : "n, number of documents containing term",
+                                    "details" : [ ]
+                                },
+                                {
+                                    "value" : 4,
+                                    "description" : "N, total number of documents with field",
+                                    "details" : [ ]
+                                }
+                            ]
+                        },
+                        {
+                            "value" : 0.4,
+                            "description" : "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:",
+                            "details" : [
+                                {
+                                    "value" : 1.0,
+                                    "description" : "freq, occurrences of term within document",
+                                    "details" : [ ]
+                                },
+                                {
+                                    "value" : 1.2,
+                                    "description" : "k1, term saturation parameter",
+                                    "details" : [ ]
+                                },
+                                {
+                                    "value" : 0.75,
+                                    "description" : "b, length normalization parameter",
+                                    "details" : [ ]
+                                },
+                                {
+                                    "value" : 4.0,
+                                    "description" : "dl, length of field",
+                                    "details" : [ ]
+                                },
+                                {
+                                    "value" : 3.0,
+                                    "description" : "avgdl, average length of field",
+                                    "details" : [ ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+        ...
+	]
+}
 ```
 
 ### 3.4.2.词元得分explain结果
 
 **es**词元得分分析：
 
-```java
-"value" : 0.31387398,
-"description" : "score(freq=1.0), product of:",
-"details" : [...]
-```
+1. boost得分
 
-1. idf得分
+boost得分是权重得分，基数2.2；指定boost数值，那boost得分就是2.2*boost，第四章节会重点介绍
+
+2. idf得分
 
 ```java
-"value" : 0.35667494,
-"description" : "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
-"details" : [
-    {
-        "value" : 3,
-        "description" : "n, number of documents containing term",
-        "details" : [ ]
-    },
-    {
-        "value" : 4,
-        "description" : "N, total number of documents with field",
-        "details" : [ ]
-    }
-]
+{
+     "value" : 0.44183275,
+     "description" : "idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:",
+     "details" : [
+         {
+             "value" : 4,
+             "description" : "n, number of documents containing term",
+             "details" : [ ]
+         },
+         {
+             "value" : 6,
+             "description" : "N, total number of documents with field",
+             "details" : [ ]
+         }
+      ]
+}
 ```
 
 根据idf公式，结合details信息得出：n（docFreq 包含该单词的文档数）= 3，N（numDocs文档总数） = 4，底数为e。计算出 
@@ -556,59 +653,201 @@ _score(idf)= log(1+(4-3+0.5)/3+0.5)=ln(1.42)=0.35667494
 $$
 这就是**es**词元的idf得分
 
-2. tf得分
+3. tf得分
 
 ```java
-"value" : 0.4,
-"description" : "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:",
-"details" : [
-    {
-        "value" : 1.0,
-        "description" : "freq, occurrences of term within document",
-        "details" : [ ]
-    },
-    {
-        "value" : 1.2,
-        "description" : "k1, term saturation parameter",
-        "details" : [ ] 
-    },
-    {
-        "value" : 0.75,
-        "description" : "b, length normalization parameter",
-        "details" : [ ]
-    },
-    {
-        "value" : 4.0,
-        "description" : "dl, length of field",
-        "details" : [ ]
-    },
-    {
-        "value" : 3.0,
-        "description" : "avgdl, average length of field",
-        "details" : [ ]
-    }
-]
+ {
+     "value" : 0.4,
+     "description" : "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:",
+     "details" : [
+         {
+             "value" : 1.0,
+             "description" : "freq, occurrences of term within document",
+             "details" : [ ]
+         },
+         {
+             "value" : 1.2,
+             "description" : "k1, term saturation parameter",
+             "details" : [ ]
+         },
+         {
+             "value" : 0.75,
+             "description" : "b, length normalization parameter",
+             "details" : [ ]
+         },
+         {
+             "value" : 4.0,
+             "description" : "dl, length of field",
+             "details" : [ ]
+         },
+         {
+             "value" : 3.0,
+             "description" : "avgdl, average length of field",
+             "details" : [ ]
+         }
+     ]
+ }
 ```
 
 根据tf公式，结合details的信息，计算出
 $$
-_score(tf)=1/(1+1.2x(1-0.75+0.75x4/3 )=0.4
+_score(tf)=1/(1+1.2*(1-0.75+0.75*4/3 )=0.4
 $$
-这就是**es**词元的tf得分
+这就是**es**词元的tf得分。这里的tf是**df**和**字段归一值norm**的综合得分
 
+4. BM25得分
 
+根据BM25公式，结合details的信息，计算出
+$$
+_score(BM25)=idf*tf=0.35667494*0.4=0.142669976‬
+$$
 
-_score（BM25）=*i*df *tfNorm =\* 0.3566749440 \* 0.88 = 0.3138739947
+5. 词元总分
 
-同理得到 BM25（的）= 1.059496，BM25（相关）= 0.6099695，BM25（度）= 0.6099695；
+**es**词元的总分为details里所有项的乘积，除了tf/idf得分，还有一个boost因子，因此**es**词元的得分是：
+$$
+_score=boost*idf*tf=2.2*0.35667494*0.4=0.38881284
+$$
 
-根据"description": "**sum** of:",当检索【es的相关度】，**文档1的_score = BM（es）+ BM25（的）+ BM25（相关）+ BM25（度）****= 2.5933092**
+6. 文档总分
+
+根据文档1得分描述，各个词元的得分组合计算方式为 **"sum of:"**，那么文档的总分为词元总分相加，即为2.5933092。
 
 # 4.相关度控制
 
-## 4.1.boost  参数【常用】
+通过上面的学习，我们已经知道了什么是TF/IDF，什么是BM25，同时通过explain大致了解了ES的相关性算分过程。那么如果ES默认的相关性算分不符合我们的使用需求，我们可以通过哪些方式去改变或控制相关度评分呢？
 
-## 4.2.查询方式改变
+一般我们有以下四种策略:
+
+- boost参数（权重因子）
+- 搜索评分算法
+- rescore结果集重新评分
+- 更改BM25参数k1和b的值
+
+## 4.1.boost 参数【常用】
+
+我们检索博客时，我们一般会认为标题 title 的权重应该比内容 content 的权重大，那么这个时候我们就可以使用boost参数进行控制。测试DSL如下
+
+```java
+<property name="testBoost" desc = "测试Boost权重">
+        <![CDATA[{
+            "explain": true,
+            "query": {
+            "bool": {
+              "must": [
+                {
+                  "match": {
+                    "title": {
+                      "query": "es",
+                      "boost": 2
+                    }
+                  }
+                },
+                {
+                  "match": {
+                    "content": "es"
+                  }
+                }
+              ]
+            }
+            }
+        }]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+ /**
+     * 测试Boost权重
+     */
+    @Test
+    public void testBoost() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testBoost",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
+```
+
+返回结果如下,以得分最高的文档作为案例：
+
+```java
+文档_source:{author=bboss开源引擎, id=3, tag=[2, 3, 4], title=es, content=这是关于关于es和编程的必看文章, createAt=2020-05-22 10:56:00, influence={gte=12, lte=15}}
+_explanation:
+ {
+     "value" : 1.3491198,
+     "description" : "sum of:",
+     "details" : [
+         {
+             {
+              "value" : 0.9808561,
+              "description" : "weight(title:es in 2) [PerFieldSimilarity], result of:",
+              "details" : [
+                {
+                  "value" : 0.9808561,
+                  "description" : "score(freq=1.0), product of:",
+                  "details" : [
+                    {
+                      "value" : 4.4,
+                      "description" : "boost",
+                      "details" : [ ]
+                    }
+                    ...
+                  ]
+                }
+              ]
+            },
+            {
+              "value" : 0.36826366,
+              "description" : "weight(content:es in 2) [PerFieldSimilarity], result of:",
+              "details" : [
+                {
+                  "value" : 0.36826366,
+                  "description" : "score(freq=1.0), product of:",
+                  "details" : [
+                    {
+                      "value" : 2.2,
+                      "description" : "boost",
+                      "details" : [ ]
+                    }
+                    ...
+                ]
+              ]
+            }
+         }
+}
+```
+
+根据结果，我们可以看到：**title:es**词元的boost得分由默认的2,2，变成4.4,而**content:es**词元的boost得分仍然是默认值2.2。这样我们就给不同的字段，设置不同的权重，从而改变文档的相关度。
+
+### 4.1.1.boost 参数值范围
+
+- boost>1 相关度相对性提升
+- 0<boost<1，相对性降低
+- boost<0，贡献负分
+
+**注意：**
+
+1. boost 可用于任何查询语句
+2. 这种提升或降低并不一定是线性的，新的评分 _score 会在应用权重提升之后被归一化 ，每种类型的查询都有自己的归一算法。
+
+## 4.2.搜索评分算法
+
+ES是天然的搜索引擎，因此提供了很多搜索算法和评分算法的API，本文简要介绍以下4种打分方式。bboss文档社区对这四种打分方式也做了单独文档介绍，下文会提供对应文档链接。
 
 ### 4.2.1.constant_score查询
 
@@ -617,6 +856,8 @@ _score（BM25）=*i*df *tfNorm =\* 0.3566749440 \* 0.88 = 0.3138739947
 ### 4.2.3.dis_max query
 
 ### 4.2.4.boosting query【常用】
+
+布尔查询可以参考ES社区的一篇文章[Bool query](http://mp.weixin.qq.com/s?__biz=MzIxMjE3NjYwOQ==&mid=2247483976&idx=1&sn=f9fc58f7f38ef79d4a652a9578ce1181&chksm=974b59c6a03cd0d036f9e1cc9d211b999c9d3acdd664f4a250a1573089fdfe747c7784191066&scene=21#wechat_redirect)
 
 ## 4.3.rescore 结果集重新评分
 
