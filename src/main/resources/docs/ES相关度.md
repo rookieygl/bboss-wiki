@@ -240,7 +240,6 @@ score(q,d)  =
 ![](D:\Code\Bboss\bboss-wiki\src\main\resources\docs\images\bm25_function.png)
 
 <center>BM25公式</center>
-
 **该公式"."的前部分就是 IDF 的算法，后部分就是 DF和字段长度归一值Norm的综合公式**。该公式可以简化为:
 $$
 _score=idf*f(df,norm)
@@ -256,7 +255,6 @@ BM25就针对这点进行来优化，转换TF（t）的逐步增大，该算法�
 ![](D:\Code\Bboss\bboss-wiki\src\main\resources\docs\images\tif-bm25.png)
 
 <center>TF / IDF与BM25的词频饱和度曲线图</center>
-
 值得一提的是，不像TF / IDF，BM25有一个比较好的特性就是它提供了两个可调参数：
 
 **`k1`**
@@ -540,7 +538,7 @@ bboss执行上述模板：
 
 ### 3.4.1.文档的explain结果
 
-以id为1的文档作为案例，解析如下
+上述测试用例返回结果如下,以得分最高的文档作为案例：
 
 ```java
 文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
@@ -847,11 +845,223 @@ _explanation:
 
 ## 4.2.搜索评分算法
 
-ES是天然的搜索引擎，因此提供了很多搜索算法和评分算法的API，本文简要介绍以下4种打分方式。bboss文档社区对这四种打分方式也做了单独文档介绍，下文会提供对应文档链接。
+ES是天然的搜索引擎，因此提供了很多搜索算法和评分算法的API，本文简要介绍以下4种打分方式。[Bboss文档社区](https://esdoc.bbossgroups.com/#/quickstart)对这四种打分方式也做了单独文档介绍，下文会提供对应文档链接。
 
 ### 4.2.1.constant_score查询
 
+嵌套一个 filter 查询，为任意一个匹配的文档指定一个常量评分，常量值为boost 的参数值(默认值为1) ，忽略 TF-IDF 信息。查询DSL如下：
+
+```java
+<property name="testConstantScore" desc = "测试constant_score，指定分数打分">
+        <![CDATA[
+            {
+                 "explain": true,
+                "query": {
+                    "constant_score": {
+                      "filter": {
+                        "term": {
+                          "title": "es"
+                        }
+                      },
+                      "boost": 1.2
+                    }
+                }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+ /**
+     * 测试Boost权重
+     */
+    @Test
+    public void testConstantScore() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testConstantScore",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
+```
+
+返回结果如下,以得分最高的文档作为案例：
+
+```java
+文档_source:{author=bboss开源引擎, id=3, tag=[2, 3, 4], title=es, content=这是关于关于es和编程的必看文章, createAt=2020-05-22 10:56:00, influence={gte=12, lte=15}} 
+_explanation:
+{
+    "value":1.2,
+    "description":"ConstantScore(title:es)^1.2","details":[]
+}
+```
+
+可以看到，包含**es**的文档得分已经变成了我们指定的1.2分，而不受BM25等相关度算法的影响。
+
 ### 4.2.2.function_score查询
+
+FunctionScore允许我们修改通过query检索出来的文档的分数。在使用时，我们必须定义一个查询和一个或多个函数，这些函数为查询返回的每个文档计算一个新分数。详细案例参考Bboss文档社区[**通过Function Score Query优化Elasticsearch搜索结果(综合排序)**](https://esdoc.bbossgroups.com/#/function_score?id=通过function-score-query优化elasticsearch搜索结果综合排序)。
+
+查询DSL如下：
+
+```java
+<property name="testFunctionScore" desc = "FunctionScore 函数评分测试">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "function_score": {
+                  "query": {
+                    "match_all": {}
+                  },
+                  "boost": "5",
+                  "functions": [
+                    {
+                      "filter": {
+                        "match": {
+                          "title": "es"
+                        }
+                      },
+                      "weight": 23
+                    },
+                    {
+                      "filter": {
+                        "match": {
+                          "title": "相关度"
+                        }
+                      },
+                      "weight": 42
+                    }
+                  ],
+                  "max_boost": 42,
+                  "min_score": 10,
+                  "score_mode": "max",
+                  "boost_mode": "sum"
+
+                }
+              }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+   /**
+     * 测试Boost权重
+     */
+    @Test
+    public void testFunctionScore() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testFunctionScore",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
+```
+
+返回结果如下,以得分最高的文档作为案例：
+
+```java
+文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
+_explanation:
+{
+    "value": 47,
+    "description": "sum of",
+    "details": [
+        {
+            "value": 5,
+            "description": "*:*^5.0",
+            "details": []
+        },
+        {
+            "value": 42,
+            "description": "min of:",
+            "details": [
+                {
+                    "value": 42,
+                    "description": "function score, score mode [max]",
+                    "details": [
+                        {
+                            "value": 23,
+                            "description": "function score, product of:",
+                            "details": [...]
+                        },
+                        {
+                            "value": 42,
+                            "description": "function score, product of:",
+                            "details": [...]
+                        }
+                    ]
+                },
+                {
+                    "value": 42,
+                    "description": "maxBoost",
+                    "details": []
+                }
+            ]
+        }
+    ]
+}
+```
+
+根据explain信息和查询DSL，简要解释下FunctionScore。
+
+1. functions部分
+
+	根据query得到的文档，在functions进行二次打分，而filter过滤是布尔查询，满足条件的分值为1，而我们给**es**，**相关度**两个词元的权重分别是23，和42，那么这两个词元的得分乘以filter得分也是23，和42。而**score_mode**指定了functions内部只取最大值，那么functions整体的得分就是42。
+
+2. 参数解释
+
+	**max_boost**：functions内部单个函数查询的最大分（这里以两个filter举例），超过这个最大分文档将被丢弃。
+
+	**min_score**：同上，小于这个分值的文档将被丢弃。
+
+	**score_mode**：functions内部单个函数查询的取值方式。
+
+	- multiply: 函数结果会相乘(默认行为)
+	- sum：函数结果会累加
+	- avg：得到所有函数结果的平均值
+	- max：得到最大的函数结果
+	- min：得到最小的函数结果
+	- first：只使用第一个函数的结果，该函数可以有过滤器，也可以没有
+
+	**boost_mode**：functions得分和和functions外部查询得分的结合方式。
+
+	- multiply：_score乘以函数结果(默认情况)
+	- sum：_score加上函数结果
+	- min：_score和函数结果的较小值
+	- max：_score和函数结果的较大值
+	- replace：将_score替换成函数结果
+
+根据上述查询DSL：boost_mode指定为sum，而functions外部还存在一个boost得分，那么文档最终得分就是functions得分+boost得分=47分。
 
 ### 4.2.3.dis_max query
 

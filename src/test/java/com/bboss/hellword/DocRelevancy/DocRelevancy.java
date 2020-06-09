@@ -194,4 +194,52 @@ public class DocRelevancy {
             logger.error("testSpanTermQuery 执行失败", e);
         }
     }
+
+    /**
+     * 测试Boost权重
+     */
+    @Test
+    public void testConstantScore() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testConstantScore",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
+
+    /**
+     * 测试Boost权重
+     */
+    @Test
+    public void testFunctionScore() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testFunctionScore",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
 }

@@ -2,109 +2,118 @@
 
     <!-- elasticsearch 文档相关度 -->
 
-
     <property name="closeTF" desc = "关闭词频TF">
-        <![CDATA[{
-            "mappings": {
-                "properties": {
-                  "text": {
-                    "type": "keyword",
-                    "index_options": "docs"
-                  }
+        <![CDATA[
+            {
+                "mappings": {
+                    "properties": {
+                      "text": {
+                        "type": "keyword",
+                        "index_options": "docs"
+                      }
+                    }
                 }
             }
-        }]]>
+        ]]>
     </property>
 
     <property name="closeNorms" desc = "关闭字段长度归一值">
-        <![CDATA[{
-            "mappings": {
-              "properties": {
-                "text": {
-                  "type": "text",
-                  "norms":  false
-                }
-              }
+        <![CDATA[
+            {
+                "mappings": {
+                  "properties": {
+                    "text": {
+                      "type": "text",
+                      "norms":  false
+                    }
+                  }
 
+                }
             }
-        }]]>
+        ]]>
     </property>
 
     <property name="bm25Index" desc = "创建索引，指定字段为BM25评分算法">
-        <![CDATA[{
-            "mappings": {
-                "properties": {
-                  "title": {
-                    "type": "text",
-                    "similarity": "BM25"
-                  },
-                  "body": {
-                    "type": "text",
-                    "similarity": "boolean"
-                  }
+        <![CDATA[
+            {
+                "mappings": {
+                    "properties": {
+                      "title": {
+                        "type": "text",
+                        "similarity": "BM25"
+                      },
+                      "body": {
+                        "type": "text",
+                        "similarity": "boolean"
+                      }
+                    }
                 }
             }
-        }]]>
+        ]]>
     </property>
 
     <property name="setBM25" desc = "设置BM25的参数">
-        <![CDATA[{
-            "settings": {
-                "similarity": {
-                  "my_bm25": {
-                    "type": "BM25",
-                    "k1":2,
-                    "b": 0
-                  }
-                }
-            },
-            "mappings": {
-                "properties": {
-                  "title": {
-                    "type": "text",
-                    "similarity": "my_bm25"
-                  },
-                  "body": {
-                    "type": "text",
-                    "similarity": "BM25"
-                  }
+        <![CDATA[
+            {
+                "settings": {
+                    "similarity": {
+                      "my_bm25": {
+                        "type": "BM25",
+                        "k1":2,
+                        "b": 0
+                      }
+                    }
+                },
+                "mappings": {
+                    "properties": {
+                      "title": {
+                        "type": "text",
+                        "similarity": "my_bm25"
+                      },
+                      "body": {
+                        "type": "text",
+                        "similarity": "BM25"
+                      }
+                    }
                 }
             }
-        }]]>
+        ]]>
     </property>
 
     <property name="createExplainIndex" desc = "创建explain测试索引">
-        <![CDATA[{
-            "mappings": {
-              "properties": {
-                "id": {
-                  "type": "integer"
-                },
-                "author": {
-                  "type": "keyword"
-                },
-                "title": {
-                  "type": "text",
-                  "analyzer": "ik_smart"
-                },
-                "content": {
-                  "type": "text",
-                  "analyzer": "ik_max_word",
-                  "search_analyzer": "ik_smart"
-                },
-                "tag": {
-                  "type": "keyword"
-                },
-                "influence": {
-                  "type": "integer_range"
-                },
-                "createAt": {
-                  "type": "date",
-                  "format": "yyyy-MM-dd HH:mm:ss"
+        <![CDATA[
+            {
+                "mappings": {
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "author": {
+                      "type": "keyword"
+                    },
+                    "title": {
+                      "type": "text",
+                      "analyzer": "ik_smart"
+                    },
+                    "content": {
+                      "type": "text",
+                      "analyzer": "ik_max_word",
+                      "search_analyzer": "ik_smart"
+                    },
+                    "tag": {
+                      "type": "keyword"
+                    },
+                    "influence": {
+                      "type": "integer_range"
+                    },
+                    "createAt": {
+                      "type": "date",
+                      "format": "yyyy-MM-dd HH:mm:ss"
+                    }
+                  }
                 }
-              }
             }
-        }]]>
+        ]]>
     </property>
 
     <property name="blukExplainIndex" desc = "导入ExplainI索引数据">
@@ -121,55 +130,98 @@
     </property>
 
     <property name="testExplain" desc = "测试explain查看ES查询执行计划">
-        <![CDATA[{
-             "explain": true,
-              "query": {
-                "match": {
-                  "title": "es的相关度"
-                }
-              }
-        }]]>
+        <![CDATA[
+            {
+                 "explain": true,
+                  "query": {
+                    "match": {
+                      "title": "es的相关度"
+                    }
+                  }
+            }
+        ]]>
     </property>
 
     <property name="testBoost" desc = "测试Boost权重">
-        <![CDATA[{
-            "explain": true,
-            "query": {
-            "bool": {
-              "must": [
-                {
-                  "match": {
-                    "title": {
-                      "query": "es",
-                      "boost": 2
+        <![CDATA[
+            {
+                "explain": true,
+                "query": {
+                "bool": {
+                  "must": [
+                    {
+                      "match": {
+                        "title": {
+                          "query": "es",
+                          "boost": 2
+                        }
+                      }
+                    },
+                    {
+                      "match": {
+                        "content": "es"
+                      }
                     }
-                  }
-                },
-                {
-                  "match": {
-                    "content": "es"
-                  }
+                  ]
                 }
-              ]
+                }
             }
+        ]]>
+    </property>
+
+    <property name="testConstantScore" desc = "constant_score 指定分数打分测试">
+        <![CDATA[
+            {
+                 "explain": true,
+                "query": {
+                    "constant_score": {
+                      "filter": {
+                        "term": {
+                          "title": "es"
+                        }
+                      },
+                      "boost": 1.2
+                    }
+                }
             }
-        }]]>
+        ]]>
     </property>
 
-    <property name="" desc = "">
-        <![CDATA[{
-
-        }]]>
-    </property>
-
-    <property name="" desc = "">
-        <![CDATA[{
-
-        }]]>
-    </property>
-    <property name="" desc = "">
-        <![CDATA[{
-
-        }]]>
+    <property name="testFunctionScore" desc = "FunctionScore 函数评分测试">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "function_score": {
+                  "query": {
+                    "match_all": {}
+                  },
+                  "boost": "5",
+                  "functions": [
+                    {
+                      "filter": {
+                        "match": {
+                          "title": "es"
+                        }
+                      },
+                      "weight": 23
+                    },
+                    {
+                      "filter": {
+                        "match": {
+                          "title": "相关度"
+                        }
+                      },
+                      "weight": 42
+                    }
+                  ],
+                  "max_boost": 42,
+                  "score_mode": "max",
+                  "boost_mode": "sum",
+                  "min_score": 10
+                }
+              }
+            }
+        ]]>
     </property>
 </properties>
