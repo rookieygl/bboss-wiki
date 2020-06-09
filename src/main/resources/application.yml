@@ -7,7 +7,7 @@ spring:
         dateFormat: yyyy.MM.dd
         discoverHost: false
         rest:
-          hostNames: localhost:29200
+          hostNames: http://192.168.147.102:9200
         scrollBlockedWaitTimeout: 0
         scrollThreadCount: 200
         scrollThreadQueue: 200

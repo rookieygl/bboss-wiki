@@ -1,11 +1,12 @@
 package com.ygl.FieldCollapsing;
 
-import com.ygl.FunctionScore.FunctionScore;
 import com.ygl.po.RecipesPo;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
-import org.frameworkset.elasticsearch.client.*;
+import org.frameworkset.elasticsearch.client.ClientInterface;
+import org.frameworkset.elasticsearch.client.ClientUtil;
+import org.frameworkset.elasticsearch.client.ResultUtil;
 import org.frameworkset.elasticsearch.entity.ESDatas;
 import org.frameworkset.elasticsearch.entity.MapRestResponse;
 import org.frameworkset.elasticsearch.serial.ESInnerHitSerialThreadLocal;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RunWith(SpringRunner.class)
 public class FieldCollapsing {
 
-    private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
+    private Logger logger = LoggerFactory.getLogger(FieldCollapsing.class);//日志
 
     @Autowired
     private BBossESStarter bbossESStarter;//bboss依赖
@@ -177,7 +178,7 @@ public class FieldCollapsing {
                 Map<String, ?> recipesRatedHitsMap = (Map<String, ?>) recipesTypeAggBucketsMap.get("hits");
                 List<Map<String, ?>> recipesTophitsList = (List<Map<String, ?>>) recipesRatedHitsMap.get("hits");
                 recipesTophitsList.forEach(recipePoMap -> {
-                    logger.info(recipePoMap.get("_source").toString());
+                    logger.info(String.valueOf(recipePoMap.get("_source")));
                 });
             });
         } catch (ElasticSearchException e) {
@@ -208,7 +209,7 @@ public class FieldCollapsing {
                     "testFieldCollapsing",
                     queryMap, RecipesPo.class);
             List<RecipesPo> esRecipesPoList = esDatast.getDatas();
-            logger.info(esRecipesPoList.toString());
+            logger.info(String.valueOf(esRecipesPoList));
         } catch (ElasticSearchException e) {
             logger.error("testFieldCollapsing 执行失败", e);
         }
@@ -250,7 +251,7 @@ public class FieldCollapsing {
                 List innerHitsRecipesPoList = ResultUtil.getInnerHits(recipesPo.getInnerHitsRecipesPo(), collapseInnerHitsName);
                 if (innerHitsRecipesPoList != null && innerHitsRecipesPoList.size() > 0) {
                     innerHitsRecipesPoList.forEach(innerHitsRecipesPo -> {
-                        System.out.println(innerHitsRecipesPo.toString());
+                        logger.info(String.valueOf(innerHitsRecipesPo));
                     });
                 }
             });

@@ -722,7 +722,7 @@ $$
 - rescore结果集重新评分
 - 更改BM25参数k1和b的值
 
-## 4.1.boost 参数【常用】
+## 4.1.boost 参数
 
 我们检索博客时，我们一般会认为标题 title 的权重应该比内容 content 的权重大，那么这个时候我们就可以使用boost参数进行控制。测试DSL如下
 
@@ -912,7 +912,7 @@ _explanation:
 
 可以看到，包含**es**的文档得分已经变成了我们指定的1.2分，而不受BM25等相关度算法的影响。
 
-### 4.2.2.function_score查询
+### 4.2.2.function_score
 
 FunctionScore允许我们修改通过query检索出来的文档的分数。在使用时，我们必须定义一个查询和一个或多个函数，这些函数为查询返回的每个文档计算一个新分数。详细案例参考Bboss文档社区[**通过Function Score Query优化Elasticsearch搜索结果(综合排序)**](https://esdoc.bbossgroups.com/#/function_score?id=通过function-score-query优化elasticsearch搜索结果综合排序)。
 
@@ -1034,6 +1034,8 @@ _explanation:
 
 根据explain信息和查询DSL，简要解释下FunctionScore。
 
+#### 4.2.2.1.FunctionScore参数
+
 1. functions部分
 
 	根据query得到的文档，在functions进行二次打分，而filter过滤是布尔查询，满足条件的分值为1，而我们给**es**，**相关度**两个词元的权重分别是23，和42，那么这两个词元的得分乘以filter得分也是23，和42。而**score_mode**指定了functions内部只取最大值，那么functions整体的得分就是42。
@@ -1063,9 +1065,109 @@ _explanation:
 
 根据上述查询DSL：boost_mode指定为sum，而functions外部还存在一个boost得分，那么文档最终得分就是functions得分+boost得分=47分。
 
-### 4.2.3.dis_max query
+### 4.2.3.dis_max
 
-### 4.2.4.boosting query【常用】
+dis_max最佳字段查询。可以通过参数 tie_breaker（默认值为0），控制其他字段的分数对_score 的影响。
+
+**注意**
+
+- tie_breaker可以是浮点数，其中默认值0表述普通查询，类似bool查询, 1 表示所有匹配语句同等重要。
+- tie_breaker ，会考虑所有匹配语句，通过其值大小决定最佳匹配字段的权重。
+
+查询DSL如下：
+
+```java
+<property name="testDisMax" desc = "dis_max 最佳字段得分">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "dis_max": {
+                  "tie_breaker": 0.5,
+                  "queries": [
+                    {
+                      "term": {
+                        "content": "es"
+                      }
+                    },
+                    {
+                      "match": {
+                        "content": "相关度"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+/**
+     * 测试dis_max 最佳字段得分
+     */
+    @Test
+    public void testDisMax() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testDisMax",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
+```
+
+返回结果如下,以得分最高的文档作为案例：
+
+```java
+文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
+_explanation:
+{
+    "value": 0.9623494,
+    "description": "max plus 0.5 times others of:",
+    "details": [
+        {
+            "value": 0.38493976,
+            "description": "weight(content:es in 0) [PerFieldSimilarity], result of:",
+            "details": [
+                {
+                    "value": 0.38493976,
+                    "description": "score(freq=1.0), product of:",
+                    "details": [...]
+                }
+            ]
+        },
+        {
+            "value": 0.7698795,
+            "description": "sum of:",
+            "details": [...]
+        }
+    ]
+}
+```
+
+dis_max 计算公式：
+$$
+_score(dis_max)=max(BM25) + ∑other(BM25)*tie_breaker
+$$
+结合dis_max公式和_explanation详情，我们就可以计算出文档总分。
+
+### 4.2.4.boosting
+
+### 4.2.5.boolean query
 
 布尔查询可以参考ES社区的一篇文章[Bool query](http://mp.weixin.qq.com/s?__biz=MzIxMjE3NjYwOQ==&mid=2247483976&idx=1&sn=f9fc58f7f38ef79d4a652a9578ce1181&chksm=974b59c6a03cd0d036f9e1cc9d211b999c9d3acdd664f4a250a1573089fdfe747c7784191066&scene=21#wechat_redirect)
 

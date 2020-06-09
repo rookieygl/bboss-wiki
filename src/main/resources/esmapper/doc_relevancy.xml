@@ -224,4 +224,29 @@
             }
         ]]>
     </property>
+
+    <property name="testDisMax" desc = "dis_max 最佳字段得分">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "dis_max": {
+                  "tie_breaker": 0.5,
+                  "queries": [
+                    {
+                      "term": {
+                        "content": "es"
+                      }
+                    },
+                    {
+                      "match": {
+                        "content": "相关度"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+        ]]>
+    </property>
 </properties>

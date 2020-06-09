@@ -1,7 +1,5 @@
 package com.ygl.FunctionScore;
 
-import com.ygl.po.Item;
-import com.ygl.po.Student;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
@@ -14,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import com.ygl.po.Item;
+import com.ygl.po.Student;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -135,8 +135,7 @@ public class FunctionScore {
                     "testFieldValueFactor", //DSL id
                     queryMap,//查询条件
                     Item.class);
-            List<Item> esCrmOrderStudentList = esDatast.getDatas();
-            logger.info(esCrmOrderStudentList.toString());
+            logger.info(String.valueOf(esDatast.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testFieldValueFactor 执行失败", e);
         }
@@ -165,8 +164,7 @@ public class FunctionScore {
                             "testRanodmScore",
                             queryMap,
                             Student.class);
-            List<Student> esCrmOrderStudentList = esDatast.getDatas();
-            logger.info(esCrmOrderStudentList.toString());
+            logger.info(String.valueOf(esDatast.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testRanodmScore 执行失败", e);
         }
@@ -200,7 +198,7 @@ public class FunctionScore {
                     "testDecayFunctionsByGeoPonit",
                     queryMap,
                     Object.class);
-            logger.info(esDatast.getDatas().toString());
+            logger.info(String.valueOf(esDatast.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testDecayFunctionsByGeoPonit 执行失败", e);
         }
@@ -225,7 +223,7 @@ public class FunctionScore {
                     queryMap,
                     Student.class);
             List<Student> esCrmOrderStudentList = esDatast.getDatas();
-            logger.info(esCrmOrderStudentList.toString());
+            logger.info(String.valueOf(esDatast.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testScriptScore 执行失败", e);
         }
@@ -270,8 +268,7 @@ public class FunctionScore {
                     "testScriptScoreByIncloudScript",
                     queryMap,
                     Student.class);
-            List<Student> students = esDatas.getDatas();
-            logger.info(students.toString());
+            logger.info(String.valueOf(esDatas.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testScriptScoreByIncloudScript 执行失败", e);
         }
@@ -298,7 +295,7 @@ public class FunctionScore {
                     "testHellFunctionScore",
                     queryMap,
                     Object.class);
-            logger.info(esDatast.getDatas().toString());
+            logger.info(String.valueOf(esDatast.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testHellFunctionScore 执行失败", e);
         }
@@ -350,7 +347,7 @@ public class FunctionScore {
                     "testSinaFunctionScore",
                     queryMap,
                     Object.class);
-            logger.info(esDatast.getDatas().toString());
+            logger.info(String.valueOf(esDatast.getDatas()));
         } catch (ElasticSearchException e) {
             logger.error("testSinaFunctionScore 执行失败", e);
         }

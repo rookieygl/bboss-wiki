@@ -1,6 +1,5 @@
 package com.ygl.SpanQuery;
 
-import com.ygl.FunctionScore.FunctionScore;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
@@ -31,7 +30,7 @@ import java.util.Map;
 @RunWith(SpringRunner.class)
 public class SpanQuery {
 
-	private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
+	private Logger logger = LoggerFactory.getLogger(SpanQuery.class);//日志
 
 	@Autowired
 	private BBossESStarter bbossESStarter;//bboss启动器

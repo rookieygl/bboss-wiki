@@ -1,6 +1,5 @@
 package com.ygl.DocRelevancy;
 
-import com.ygl.FunctionScore.FunctionScore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
@@ -27,7 +26,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest
 @RunWith(SpringRunner.class)
 public class DocRelevancy {
-    private Logger logger = LoggerFactory.getLogger(FunctionScore.class);//日志
+    private Logger logger = LoggerFactory.getLogger(DocRelevancy.class);//日志
 
     @Autowired
     private BBossESStarter bbossESStarter;//bboss启动器
@@ -38,7 +37,7 @@ public class DocRelevancy {
      * 关闭词频TF
      */
     @Test
-    public void closeTF(){
+    public void closeTF() {
         try {
             clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
             /*检查索引是否存在，存在就删除重建*/
@@ -56,7 +55,7 @@ public class DocRelevancy {
      * 关闭字段长度归一值
      */
     @Test
-    public void closeNorms(){
+    public void closeNorms() {
         try {
             clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
             /*检查索引是否存在，存在就删除重建*/
@@ -74,7 +73,7 @@ public class DocRelevancy {
      * 创建索引，指定字段为BM25评分算法
      */
     @Test
-    public void bm25Index(){
+    public void bm25Index() {
         try {
             clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
             /*检查索引是否存在，存在就删除重建*/
@@ -92,7 +91,7 @@ public class DocRelevancy {
      * 设置BM25的参数
      */
     @Test
-    public void setBM25(){
+    public void setBM25() {
         try {
             clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
             /*检查索引是否存在，存在就删除重建*/
@@ -110,7 +109,7 @@ public class DocRelevancy {
      * 创建explain测试索引
      */
     @Test
-    public void createExplainIndex(){
+    public void createExplainIndex() {
         try {
             clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
             /*检查索引是否存在，存在就删除重建*/
@@ -220,7 +219,7 @@ public class DocRelevancy {
     }
 
     /**
-     * 测试Boost权重
+     * 测试FunctionScore 函数评分测
      */
     @Test
     public void testFunctionScore() {
@@ -232,7 +231,29 @@ public class DocRelevancy {
                     MetaMap.class);//文档信息
 
             //ES返回结果遍历
+            metaMapESDatas.getDatas().forEach(metaMap -> {
+                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+                        SimpleStringUtil.object2json(metaMap.getExplanation())
+                );
+            });
+        } catch (ElasticSearchException e) {
+            logger.error("testSpanTermQuery 执行失败", e);
+        }
+    }
 
+    /**
+     * 测试dis_max 最佳字段得分
+     */
+    @Test
+    public void testDisMax() {
+        try {
+            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+                    "testDisMax",//DSL模板ID
+                    MetaMap.class);//文档信息
+
+            //ES返回结果遍历
             metaMapESDatas.getDatas().forEach(metaMap -> {
                 logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
                         SimpleStringUtil.object2json(metaMap.getExplanation())
