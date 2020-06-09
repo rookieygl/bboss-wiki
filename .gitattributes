@@ -1,10 +1,49 @@
-# Auto detect text files and perform LF normalization
-* text=auto
-# Created by .ignore support plugin (hsz.mobi)
-/.git
-/.idea
-.mvn
-/target
-/*.iml
-/mvnw
-/mvnw.cmd
+# 过滤写法
+# 文件 filepath 直接写文件路径（相对路径也可以）
+# 文件夹 /path/ 过滤文件夹
+#!取反
+
+###保留目录
+!**/src/main/**
+!**/src/test/**
+
+#工程目录
+/target/
+/.mvn/
+*mvnw*
+
+#IntelliJ IDEA
+/.idea/
+*.iws
+*.iml
+*.ipr
+HELP.md
+
+#git
+/.git/
+
+#gradle
+/gradle/wrapper/
+/gradlew
+/gradlew.bat
+
+#STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+#NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+# vue
+.vscode/
+/node_modules/

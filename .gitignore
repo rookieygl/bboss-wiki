@@ -10,13 +10,13 @@
 #工程目录
 /target/
 /.mvn/
+*mvnw*
 
 #IntelliJ IDEA
 /.idea/
 *.iws
 *.iml
 *.ipr
-*.mvnw*
 HELP.md
 
 #git
