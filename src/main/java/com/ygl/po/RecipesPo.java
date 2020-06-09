@@ -1,4 +1,4 @@
-package com.bboss.hellword.po;
+package com.ygl.po;
 
 import com.frameworkset.orm.annotation.ESMetaInnerHits;
 import org.frameworkset.elasticsearch.entity.InnerSearchHits;

@@ -1,4 +1,4 @@
-package com.bboss.hellword.po;
+package com.ygl.po;
 
 import java.util.Date;
 

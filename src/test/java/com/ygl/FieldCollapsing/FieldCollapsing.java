@@ -1,7 +1,7 @@
-package com.bboss.hellword.FieldCollapsing;
+package com.ygl.FieldCollapsing;
 
-import com.bboss.hellword.FunctionScore.FunctionScore;
-import com.bboss.hellword.po.RecipesPo;
+import com.ygl.FunctionScore.FunctionScore;
+import com.ygl.po.RecipesPo;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;

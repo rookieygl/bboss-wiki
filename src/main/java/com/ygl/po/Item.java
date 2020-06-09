@@ -1,4 +1,4 @@
-package com.bboss.hellword.po;
+package com.ygl.po;
 
 public class Item {
     private Long docId;

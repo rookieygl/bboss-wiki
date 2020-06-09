@@ -1,6 +1,6 @@
-package com.bboss.hellword.SpanQuery;
+package com.ygl.SpanQuery;
 
-import com.bboss.hellword.FunctionScore.FunctionScore;
+import com.ygl.FunctionScore.FunctionScore;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;

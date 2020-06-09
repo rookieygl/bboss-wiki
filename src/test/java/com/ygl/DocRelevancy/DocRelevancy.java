@@ -1,6 +1,6 @@
-package com.bboss.hellword.DocRelevancy;
+package com.ygl.DocRelevancy;
 
-import com.bboss.hellword.FunctionScore.FunctionScore;
+import com.ygl.FunctionScore.FunctionScore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;

@@ -1,7 +1,7 @@
-package com.bboss.hellword.FunctionScore;
+package com.ygl.FunctionScore;
 
-import com.bboss.hellword.po.Item;
-import com.bboss.hellword.po.Student;
+import com.ygl.po.Item;
+import com.ygl.po.Student;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;
