@@ -2,7 +2,7 @@
 
     <!-- elasticsearch 文档相关度 -->
 
-    <property name="closeTF" desc = "关闭词频TF">
+    <property name="closeTF" desc="关闭词频TF">
         <![CDATA[
             {
                 "mappings": {
@@ -17,7 +17,7 @@
         ]]>
     </property>
 
-    <property name="closeNorms" desc = "关闭字段长度归一值">
+    <property name="closeNorms" desc="关闭字段长度归一值">
         <![CDATA[
             {
                 "mappings": {
@@ -27,13 +27,12 @@
                       "norms":  false
                     }
                   }
-
                 }
             }
         ]]>
     </property>
 
-    <property name="bm25Index" desc = "创建索引，指定字段为BM25评分算法">
+    <property name="bm25Index" desc="创建索引，指定字段为BM25评分算法">
         <![CDATA[
             {
                 "mappings": {
@@ -52,35 +51,7 @@
         ]]>
     </property>
 
-    <property name="setBM25" desc = "设置BM25的参数">
-        <![CDATA[
-            {
-                "settings": {
-                    "similarity": {
-                      "my_bm25": {
-                        "type": "BM25",
-                        "k1":2,
-                        "b": 0
-                      }
-                    }
-                },
-                "mappings": {
-                    "properties": {
-                      "title": {
-                        "type": "text",
-                        "similarity": "my_bm25"
-                      },
-                      "body": {
-                        "type": "text",
-                        "similarity": "BM25"
-                      }
-                    }
-                }
-            }
-        ]]>
-    </property>
-
-    <property name="createExplainIndex" desc = "创建explain测试索引">
+    <property name="createExplainIndex" desc="创建explain测试索引">
         <![CDATA[
             {
                 "mappings": {
@@ -116,7 +87,7 @@
         ]]>
     </property>
 
-    <property name="blukExplainIndex" desc = "导入ExplainI索引数据">
+    <property name="blukExplainIndex" desc="导入ExplainI索引数据">
         <![CDATA[
             {"index":{"_index":"explain_index","_id":"1"}}
             {"id":1,"author":"bboss开源引擎","title":"es的相关度","content":"这是关于es的相关度的文章","tag":[1,2,3],"influence":{"gte":10,"lte":12},"createAt":"2020-05-24 10:56:00"}
@@ -129,7 +100,7 @@
         ]]>
     </property>
 
-    <property name="testExplain" desc = "测试explain查看ES查询执行计划">
+    <property name="testExplain" desc="测试explain查看ES查询执行计划">
         <![CDATA[
             {
                  "explain": true,
@@ -142,52 +113,52 @@
         ]]>
     </property>
 
-    <property name="testBoost" desc = "测试Boost权重">
+    <property name="testBoost" desc="boost 测试字段权重">
         <![CDATA[
             {
                 "explain": true,
                 "query": {
-                "bool": {
-                  "must": [
-                    {
-                      "match": {
-                        "title": {
-                          "query": "es",
-                          "boost": 2
+                    "bool": {
+                      "must": [
+                        {
+                          "match": {
+                            "title": {
+                              "query": #[title],
+                              "boost": #[boost]
+                            }
+                          }
+                        },
+                        {
+                          "match": {
+                            "content": #[title]
+                          }
                         }
-                      }
-                    },
-                    {
-                      "match": {
-                        "content": "es"
-                      }
+                      ]
                     }
-                  ]
-                }
                 }
             }
         ]]>
     </property>
 
-    <property name="testConstantScore" desc = "constant_score 指定分数打分测试">
+    <property name="testConstantScore" desc="constant_score 指定分数打分测试">
         <![CDATA[
             {
-                 "explain": true,
+                "explain": true,
                 "query": {
                     "constant_score": {
                       "filter": {
                         "term": {
-                          "title": "es"
+                          "title": #[title]
                         }
                       },
-                      "boost": 1.2
+                      "boost": #[boost]
                     }
                 }
             }
         ]]>
     </property>
 
-    <property name="testFunctionScore" desc = "FunctionScore 函数评分测试">
+    <property name="testFunctionScore" desc="FunctionScore 函数评分测试">
         <![CDATA[
             {
               "explain": true,
@@ -196,12 +167,11 @@
                   "query": {
                     "match_all": {}
                   },
-                  "boost": "5",
                   "functions": [
                     {
                       "filter": {
                         "match": {
-                          "title": "es"
+                          "title": #[title]
                         }
                       },
                       "weight": 23
@@ -209,15 +179,16 @@
                     {
                       "filter": {
                         "match": {
-                          "title": "相关度"
+                          "title": #[weightTitle]
                         }
                       },
                       "weight": 42
                     }
                   ],
-                  "max_boost": 42,
+                  "boost": #[boost],
                   "score_mode": "max",
                   "boost_mode": "sum",
+                  "max_boost": 42,
                   "min_score": 10
                 }
               }
@@ -225,25 +196,172 @@
         ]]>
     </property>
 
-    <property name="testDisMax" desc = "dis_max 最佳字段得分">
+    <property name="testDisMax" desc="dis_max 最佳字段得分测试">
         <![CDATA[
             {
               "explain": true,
               "query": {
                 "dis_max": {
-                  "tie_breaker": 0.5,
                   "queries": [
                     {
                       "term": {
-                        "content": "es"
+                        "content": #[content1]
                       }
                     },
                     {
                       "match": {
-                        "content": "相关度"
+                        "content": #[content2]
+                      }
+                    }
+                  ],
+                  "tie_breaker": #[tie_breaker]
+                }
+              }
+            }
+        ]]>
+    </property>
+
+    <property name="testBoosting" desc="boosting 结果集权重测试">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "boosting": {
+                  "positive": {
+                    "bool": {
+                      "should": [
+                        {
+                          "term": {
+                            "title": #[positive1]
+                          }
+                        },
+                        {
+                          "term": {
+                            "title": #[positive2]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "negative": {
+                    "term": {
+                      "content": #[negative]
+                    }
+                  },
+                  "negative_boost": #[negative_boost]
+                }
+              }
+            }
+        ]]>
+    </property>
+
+    <property name="testRescore" desc="rescore 结果集重新打分">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "bool": {
+                  "should": [
+                    {
+                      "match": {
+                        "content": {
+                          "query": #[content]
+                        }
+                      }
+                    },
+                    {
+                      "match": {
+                        "title": {
+                          "query": #[title]
+                        }
                       }
                     }
                   ]
+                }
+              },
+              "rescore": {
+                "window_size": #[window_size],
+                "query": {
+                  "rescore_query": {
+                    "match_phrase": {
+                      "content": {
+                        "query": #[rescore_query],
+                        "slop": 50
+                      }
+                    }
+                  },
+                  "query_weight": #[query_weight],
+                  "rescore_query_weight": #[rescore_query_weight]
+                }
+              }
+            }
+        ]]>
+    </property>
+
+    <property name="setBM25" desc="设置BM25的参数">
+        <![CDATA[
+            {
+                "settings": {
+                    "similarity": {
+                      #[my_bm25]: {
+                        "type": "BM25",
+                        "k1": #[k1],
+                        "b": #[b]
+                      }
+                    }
+                },
+                "mappings": {
+                    "properties": {
+                      "title": {
+                        "type": "text",
+                        "similarity": #[my_bm25]
+                      },
+                      "body": {
+                        "type": "text",
+                        "similarity": "BM25"
+                      }
+                    }
+                }
+            }
+        ]]>
+    </property>
+
+    <property name="rebuildExplainIndex" desc="重建explain测试索引">
+        <![CDATA[
+            {
+              "settings": {
+                "index": {
+                  "number_of_shards": #[number_of_shards],
+                  "number_of_replicas": #[number_of_replicas]
+                }
+              },
+              "mappings": {
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "author": {
+                    "type": "keyword"
+                  },
+                  "title": {
+                    "type": "text",
+                    "analyzer": "ik_smart"
+                  },
+                  "content": {
+                    "type": "text",
+                    "analyzer": "ik_max_word",
+                    "search_analyzer": "ik_smart"
+                  },
+                  "tag": {
+                    "type": "keyword"
+                  },
+                  "influence": {
+                    "type": "integer_range"
+                  },
+                  "createAt": {
+                    "type": "date",
+                    "format": "yyyy-MM-dd HH:mm:ss"
+                  }
                 }
               }
             }

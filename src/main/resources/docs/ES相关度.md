@@ -8,7 +8,7 @@ ES 5.0 之前，默认的相关性算分采用的是 TF-IDF，而之后则默认
 
 本文从相关性概念入手，到 TF-IDF 和 BM25 讲解和数学公式学习，再到详细介绍多种常用的相关度控制方式。相信对你一定有用！
 
-# 案例工程
+# 前言
 
 案例源码工程:
 
@@ -18,7 +18,7 @@ https://github.com/rookieygl/bboss-wiki
 
 https://esdoc.bbossgroups.com/#/README
 
-开始之前要先创建DSL的配置文件，位置在案例工程resources/esmapper/doc_relevancy.xml，Git地址：https://github.com/rookieygl/bboss-wiki/blob/master/src/main/resources/esmapper/doc_relevancy.xml。本文涉及到的DSL都会放到该配置文件。
+开始之前要先创建DSL的配置文件，位置在案例工程[resources/esmapper/doc_relevancy.xml](https://github.com/rookieygl/bboss-wiki/blob/master/src/main/resources/esmapper/doc_relevancy.xml)。本文涉及到的DSL都会放到该配置文件。
 
 # 1.文档相关性
 
@@ -26,17 +26,15 @@ https://esdoc.bbossgroups.com/#/README
 
 对于信息检索工具，衡量其性能有3大指标：
 
-1. **查准率 Precision**：尽可能返回较少的无关文档；
-
-2. **查全率 Recall**：尽可能返回较多的相关文档；
-
-3. **排序 Ranking**：是否能按相关性排序。
+- **查准率 Precision**：尽可能返回较少的无关文档；
+- **查全率 Recall**：尽可能返回较多的相关文档；
+- **排序 Ranking**：是否能按相关性排序。
 
 前两者更多与分词匹配相关，而后者则与相关性的判断与算分相关。本文将详细介绍相关性系列知识点。
 
 # 2.相似度理论
 
- Elasticsearch使用布尔模型（Boolean model）查找匹配文档，并用一个名为实用评分函数（practical scoring function）的公式来计算相关度。这个公式借鉴了 词频/逆向（TF/TDF）文档频率和 向量空间模型（vector space model），同时也加入了一些现代的新特性，如协调因子（coordination factor），字段长度归一化（field length normalization），以及词或查询语句权重提升。
+ Elasticsearch使用布尔模型（Boolean model）查找匹配文档，并用一个名为实用评分函数（practical scoring function）的公式来计算相关度。这个公式借鉴了 词频/逆向（TF/TDF）文档频率和向量空间模型（vector space model），同时也加入了一些新特性，如协调因子（coordination factor），字段长度归一化（field length normalization），以及词或查询语句权重提升。
 
 [*向量空间模型（Boolean model）*](https://www.elastic.co/guide/cn/elasticsearch/guide/current/scoring-theory.html#scoring-theory) 和[*协调因子*](https://www.elastic.co/guide/cn/elasticsearch/guide/current/practical-scoring-function.html)这里不再介绍，详情请参考ES官网资料。
 
@@ -50,6 +48,8 @@ full AND text AND search AND (elasticsearch OR lucene)
 
 会将所有包括词 `full` 、 `text` 和 `search` ，以及 `elasticsearch` 或 `lucene` 的文档作为结果集。这个过程简单且快速，它将所有可能不匹配的文档排除在外。
 
+这就是term查询，只返回符合的文档，多个条件一视同仁，文档得分完全由BM(25)决定。
+
 ## 2.2.词频 TF（Term Frequency）
 
 检索词在文档中出现的频度是多少？出现频率越高，相关性也越高。关于TF的数学表达式，参考ES官网，如下：
@@ -60,7 +60,7 @@ tf(t in d) = √frequency
 
 词 t 在文档 d 的词频（ tf ）是该词在文档中出现次数的平方根。
 
-**概念理解**：比如说我们检索关键字“es”，“es”在文档A中出现了10次，在文档B中只出现了1次。我们认为文档A与“es”的相关性更高。
+**概念理解**：比如说我们检索关键字`es`，`es`在文档A中出现了10次，在文档B中只出现了1次。我们认为文档A与`es`的相关性更高。
 
 ## 2.2.1.关闭词频
 
@@ -109,7 +109,7 @@ bboss执行上述模板：
     }
 ```
 
-将参数 `index_options` 设置为 `docs` 可以禁用词频统计及词频位置，这个映射的字段不会计算词的出现次数，对于短语或近似查询也不可用。要求精确查询的 `not_analyzed` 字符串字段会默认使用该设置。
+将字段 `index_options` 设置为 `docs` 可以禁用词频统计及词频位置，这个映射的字段不会计算词的出现次数，对于短语或近似查询也不可用。字段`index`设置为 `not_analyzed` 字符串字段会默认使用该设置。
 
 ## 2.2.2.注意事项
 
@@ -233,14 +233,16 @@ score(q,d)  =
 
 ## 2.7.BM25：可更改的相似度
 
+BM25官方成为是可拔插的相似度，可以修改`k1`和`b`的值进行相似度修改。具体修改方法会在下面介绍。
+
 ### 2.7.1.BM25公式
 
 关于BM25公式，倒不如将关注点放在BM25所能带来的实际好处上。BM25同样使用词频，逆向文档频率以及长度长归一化，但是每个因素的定义都有细微区别。
 
 ![](D:\Code\Bboss\bboss-wiki\src\main\resources\docs\images\bm25_function.png)
 
-<center>BM25公式</center>
-**该公式"."的前部分就是 IDF 的算法，后部分就是 DF和字段长度归一值Norm的综合公式**。该公式可以简化为:
+<center>BM25公式图</center>
+**该公式`.`的前部分就是 IDF 的算法，后部分就是 DF和字段长度归一值Norm的综合公式**。该公式可以简化为:
 $$
 _score=idf*f(df,norm)
 $$
@@ -250,7 +252,7 @@ $$
 
 TF-IDF算法评分：TF（t）部分的值，随着文档里的某个词出现次数增多，导致整个公式返回的值越大。
 
-BM25就针对这点进行来优化，转换TF（t）的逐步增大，该算法的返回值会趋于一个数值。整体而言BM25就是对TF-IDF算法的改进。
+BM25就针对这点进行来优化，转换TF（t）的逐步增大，该算法的返回值会趋于一个数值。整体而言BM25就是对TF-IDF算法的平滑改进。
 
 ![](D:\Code\Bboss\bboss-wiki\src\main\resources\docs\images\tif-bm25.png)
 
@@ -265,7 +267,17 @@ BM25就针对这点进行来优化，转换TF（t）的逐步增大，该算法�
 
 这个参数控制着字段长归一值所起的作用， `0.0` 会禁用归一化， `1.0` 会启用完全归一化。默认值为 `0.75` 。
 
-### 2.7.3指定BM25
+### 2.7.3.指定BM25相似度
+
+similarity默认属性有三种
+
+- BM25：[Okapi BM25 algorithm](https://en.wikipedia.org/wiki/Okapi_BM25)
+- classic：[TF/IDF algorithm](https://en.wikipedia.org/wiki/Tf–idf)
+- boolean：简单布尔相似度，匹配分数为1，不匹配为0。
+
+es7x版本之前版本similarity默认值为`classic`，在7x移除该值并默认为`BM25`。详情参考官网[*similarity属性*](https://www.elastic.co/guide/en/elasticsearch/reference/current/similarity.html)。
+
+当然我们可以自定义相关度，指定similarity为我们自定义相关度算法，下面会有详细介绍。
 
 ```java
 <property name="bm25Index" desc = "创建索引，指定字段为BM25评分算法">
@@ -285,8 +297,6 @@ BM25就针对这点进行来优化，转换TF（t）的逐步增大，该算法�
         }]]>
     </property>
 ```
-
-es7x版本之前版本similarity默认值为**classic**，在7x移除该值并默认为BM25。详情参考官网[*similarity属性*](https://www.elastic.co/guide/en/elasticsearch/reference/current/similarity.html)。
 
 bboss执行上述模板：
 
@@ -309,64 +319,6 @@ bboss执行上述模板：
         }
     }
 ```
-
-
-
-### 2.7.4.配置BM25
-
-配置相似度算法和配置分词器很相似，自定义相似度算法也可以在创建索引时指定，DSL如下：
-
-```java
-<property name="setBM25" desc = "设置BM25的参数">
-        <![CDATA[{
-            "settings": {
-            "similarity": {
-              "my_bm25": {
-                "type": "BM25",
-                "k1":2,
-                "b": 0
-              }
-            }
-            },
-            "mappings": {
-            "properties": {
-              "title": {
-                "type": "text",
-                "similarity": "my_bm25"
-              },
-              "body": {
-                "type": "text",
-                "similarity": "BM25"
-              }
-            }
-            }
-        }]]>
-    </property>
-```
-
-bboss执行上述模板：
-
-```java
- /**
-     * 设置BM25的参数
-     */
-    @Test
-    public void setBM25(){
-        try {
-            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
-            /*检查索引是否存在，存在就删除重建*/
-            if (clientInterface.existIndice("bm25_index")) {
-                clientInterface.dropIndice("bm25_index");
-            }
-            clientInterface.createIndiceMapping("bm25_index", "setBM25");
-            logger.info("创建索引 bm25_index 成功");
-        } catch (ElasticSearchException e) {
-            logger.error("创建索引 bm25_index 执行失败", e);
-        }
-    }
-```
-
-
 
 # 3.explain：ES执行计划
 
@@ -536,9 +488,9 @@ bboss执行上述模板：
 
 上述查询DSL中： **"title": "es的相关度"**这个查询条件，根据我们采用的是**ik_smart**分词器，会被分词为**es**、**的**、**相关**、**度**四个词元去查询，四个词元的总分就是该查询条件的总分。我们以**es**词元来讲解explain评分结果。
 
-### 3.4.1.文档的explain结果
+### 3.4.1.explain结果
 
-上述测试用例返回结果如下,以得分最高的文档作为案例：
+返回结果如下,以排序第一 的文档为例：
 
 ```java
 文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
@@ -616,9 +568,19 @@ _explanation:
 }
 ```
 
-### 3.4.2.词元得分explain结果
+### 3.4.2.打分计算方式
 
-**es**词元得分分析：
+每一层都包含了三个元素`value`、`description`、`details`，
+
+value：最终得分
+
+description：描述details元素的组合方式，最外层一般是 `"sum of:"`，即details每个元素相加为value
+
+details：是一个数组，记录value的得分细节。比如BM25得分就是由idf和tf两个元素相乘得出。
+
+### 3.4.3.词元得分
+
+**`es`词元得分分析**：
 
 1. boost得分
 
@@ -727,29 +689,31 @@ $$
 我们检索博客时，我们一般会认为标题 title 的权重应该比内容 content 的权重大，那么这个时候我们就可以使用boost参数进行控制。测试DSL如下
 
 ```java
-<property name="testBoost" desc = "测试Boost权重">
-        <![CDATA[{
-            "explain": true,
-            "query": {
-            "bool": {
-              "must": [
-                {
-                  "match": {
-                    "title": {
-                      "query": "es",
-                      "boost": 2
+<property name="testBoost" desc="boost 测试字段权重">
+        <![CDATA[
+            {
+                "explain": true,
+                "query": {
+                    "bool": {
+                      "must": [
+                        {
+                          "match": {
+                            "title": {
+                              "query": #[title],
+                              "boost": #[boost]
+                            }
+                          }
+                        },
+                        {
+                          "match": {
+                            "content": #[title]
+                          }
+                        }
+                      ]
                     }
-                  }
-                },
-                {
-                  "match": {
-                    "content": "es"
-                  }
                 }
-              ]
             }
-            }
-        }]]>
+        ]]>
     </property>
 ```
 
@@ -757,31 +721,35 @@ bboss执行上述模板：
 
 ```java
  /**
-     * 测试Boost权重
-     */
-    @Test
-    public void testBoost() {
-        try {
-            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+	 * boost 测试字段权重
+	 */
+	@Test
+	public void testBoost() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+			//查询参数
+			Map<String, Object> queryParamsMap = new HashMap<>();
+			queryParamsMap.put("title", "es");
+			queryParamsMap.put("boost", 2);
+			queryParamsMap.put("content", "es");
+			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+					"testBoost",//DSL模板ID
+					queryParamsMap,//查询参数
+					MetaMap.class);//文档信息
 
-            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
-                    "testBoost",//DSL模板ID
-                    MetaMap.class);//文档信息
-
-            //ES返回结果遍历
-
-            metaMapESDatas.getDatas().forEach(metaMap -> {
-                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
-                        SimpleStringUtil.object2json(metaMap.getExplanation())
-                );
-            });
-        } catch (ElasticSearchException e) {
-            logger.error("testSpanTermQuery 执行失败", e);
-        }
-    }
+			//ES返回结果遍历 结果集不能为空，否则会报空指针
+			metaMapESDatas.getDatas().forEach(metaMap -> {
+				logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+						SimpleStringUtil.object2json(metaMap.getExplanation())
+				);
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testBoost 执行失败", e);
+		}
+	}
 ```
 
-返回结果如下,以得分最高的文档作为案例：
+返回结果如下,以排序第一 的文档为例：
 
 ```java
 文档_source:{author=bboss开源引擎, id=3, tag=[2, 3, 4], title=es, content=这是关于关于es和编程的必看文章, createAt=2020-05-22 10:56:00, influence={gte=12, lte=15}}
@@ -847,23 +815,25 @@ _explanation:
 
 ES是天然的搜索引擎，因此提供了很多搜索算法和评分算法的API，本文简要介绍以下4种打分方式。[Bboss文档社区](https://esdoc.bbossgroups.com/#/quickstart)对这四种打分方式也做了单独文档介绍，下文会提供对应文档链接。
 
-### 4.2.1.constant_score查询
+### 4.2.1.constant_score
 
-嵌套一个 filter 查询，为任意一个匹配的文档指定一个常量评分，常量值为boost 的参数值(默认值为1) ，忽略 TF-IDF 信息。查询DSL如下：
+constant_score：常量打分。嵌套一个filter查询，为任意一个匹配的文档指定一个常量评分，常量值为boost 的参数值(默认值为1) ，忽略 TF-IDF 信息。
+
+查询DSL如下：
 
 ```java
-<property name="testConstantScore" desc = "测试constant_score，指定分数打分">
+<property name="testConstantScore" desc="constant_score 指定分数打分测试">
         <![CDATA[
             {
-                 "explain": true,
+                "explain": true,
                 "query": {
                     "constant_score": {
                       "filter": {
                         "term": {
-                          "title": "es"
+                          "title": #[title]
                         }
                       },
-                      "boost": 1.2
+                      "boost": #[boost]
                     }
                 }
             }
@@ -874,32 +844,38 @@ ES是天然的搜索引擎，因此提供了很多搜索算法和评分算法的
 bboss执行上述模板：
 
 ```java
- /**
-     * 测试Boost权重
-     */
-    @Test
-    public void testConstantScore() {
-        try {
-            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+	/**
+	 * constant_score 指定分数打分测试
+	 */
+	@Test
+	public void testConstantScore() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
 
-            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
-                    "testConstantScore",//DSL模板ID
-                    MetaMap.class);//文档信息
 
-            //ES返回结果遍历
+			//查询参数
+			Map<String, Object> queryParamsMap = new HashMap<>();
+			queryParamsMap.put("title", "es");
+			queryParamsMap.put("boost", 1.2);
 
-            metaMapESDatas.getDatas().forEach(metaMap -> {
-                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
-                        SimpleStringUtil.object2json(metaMap.getExplanation())
-                );
-            });
-        } catch (ElasticSearchException e) {
-            logger.error("testSpanTermQuery 执行失败", e);
-        }
-    }
+			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+					"testConstantScore",//DSL模板ID
+					queryParamsMap,//查询参数
+					MetaMap.class);//文档信息
+
+			//ES返回结果遍历 结果集不能为空，否则会报空指针
+			metaMapESDatas.getDatas().forEach(metaMap -> {
+				logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+						SimpleStringUtil.object2json(metaMap.getExplanation())
+				);
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testConstantScore 执行失败", e);
+		}
+	}
 ```
 
-返回结果如下,以得分最高的文档作为案例：
+返回结果如下,以排序第一 的文档为例：
 
 ```java
 文档_source:{author=bboss开源引擎, id=3, tag=[2, 3, 4], title=es, content=这是关于关于es和编程的必看文章, createAt=2020-05-22 10:56:00, influence={gte=12, lte=15}} 
@@ -914,12 +890,12 @@ _explanation:
 
 ### 4.2.2.function_score
 
-FunctionScore允许我们修改通过query检索出来的文档的分数。在使用时，我们必须定义一个查询和一个或多个函数，这些函数为查询返回的每个文档计算一个新分数。详细案例参考Bboss文档社区[**通过Function Score Query优化Elasticsearch搜索结果(综合排序)**](https://esdoc.bbossgroups.com/#/function_score?id=通过function-score-query优化elasticsearch搜索结果综合排序)。
+FunctionScore：函数打分。在使用时，我们必须定义一个查询和一个或多个函数，每个函数为查询返回的每个文档计算一个新分数。再由FunctionScore指定方式综合计算文档总分。详细案例参考Bboss文档社区[**通过Function Score Query优化Elasticsearch搜索结果(综合排序)**](https://esdoc.bbossgroups.com/#/function_score?id=通过function-score-query优化elasticsearch搜索结果综合排序)。
 
 查询DSL如下：
 
 ```java
-<property name="testFunctionScore" desc = "FunctionScore 函数评分测试">
+<property name="testFunctionScore" desc="FunctionScore 函数评分测试">
         <![CDATA[
             {
               "explain": true,
@@ -928,12 +904,11 @@ FunctionScore允许我们修改通过query检索出来的文档的分数。在�
                   "query": {
                     "match_all": {}
                   },
-                  "boost": "5",
                   "functions": [
                     {
                       "filter": {
                         "match": {
-                          "title": "es"
+                          "title": #[title]
                         }
                       },
                       "weight": 23
@@ -941,17 +916,17 @@ FunctionScore允许我们修改通过query检索出来的文档的分数。在�
                     {
                       "filter": {
                         "match": {
-                          "title": "相关度"
+                          "title": #[weightTitle]
                         }
                       },
                       "weight": 42
                     }
                   ],
-                  "max_boost": 42,
-                  "min_score": 10,
+                  "boost": #[boost],
                   "score_mode": "max",
-                  "boost_mode": "sum"
-
+                  "boost_mode": "sum",
+                  "max_boost": 42,
+                  "min_score": 10
                 }
               }
             }
@@ -962,32 +937,39 @@ FunctionScore允许我们修改通过query检索出来的文档的分数。在�
 bboss执行上述模板：
 
 ```java
-   /**
-     * 测试Boost权重
-     */
-    @Test
-    public void testFunctionScore() {
-        try {
-            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+	/**
+	 * FunctionScore 函数评分测试
+	 */
+	@Test
+	public void testFunctionScore() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
 
-            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
-                    "testFunctionScore",//DSL模板ID
-                    MetaMap.class);//文档信息
+			//查询参数
+			Map<String, Object> queryParamsMap = new HashMap<>();
+			queryParamsMap.put("title", "es");
+			queryParamsMap.put("weightTitle", "相关度");
+			queryParamsMap.put("boost", 5);
 
-            //ES返回结果遍历
+			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+					"testFunctionScore",//DSL模板ID
+					queryParamsMap,//查询参数
+					MetaMap.class);//文档信息
 
-            metaMapESDatas.getDatas().forEach(metaMap -> {
-                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
-                        SimpleStringUtil.object2json(metaMap.getExplanation())
-                );
-            });
-        } catch (ElasticSearchException e) {
-            logger.error("testSpanTermQuery 执行失败", e);
-        }
-    }
+			//ES返回结果遍历
+			metaMapESDatas.getDatas().forEach(metaMap -> {
+				logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+						SimpleStringUtil.object2json(metaMap.getExplanation())
+				);
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testFunctionScore 执行失败", e);
+		}
+	}
+
 ```
 
-返回结果如下,以得分最高的文档作为案例：
+返回结果如下,以排序第一 的文档为例：
 
 ```java
 文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
@@ -1034,7 +1016,7 @@ _explanation:
 
 根据explain信息和查询DSL，简要解释下FunctionScore。
 
-#### 4.2.2.1.FunctionScore参数
+#### 4.2.2.1.function_score参数
 
 1. functions部分
 
@@ -1067,35 +1049,36 @@ _explanation:
 
 ### 4.2.3.dis_max
 
-dis_max最佳字段查询。可以通过参数 tie_breaker（默认值为0），控制其他字段的分数对_score 的影响。
+dis_max：最佳字段查询。可以通过参数 tie_breaker（默认值为0），控制其他字段的分数对_score 的影响。
 
 **注意**
 
-- tie_breaker可以是浮点数，其中默认值0表述普通查询，类似bool查询, 1 表示所有匹配语句同等重要。
-- tie_breaker ，会考虑所有匹配语句，通过其值大小决定最佳匹配字段的权重。
+-  考虑所有匹配语句，通过tie_breaker值大小决定最佳匹配字段的权重。
+
+- tie_breaker可以是浮点数，其中默认值0表示普通查询，类似terms查询, 1表示所有匹配语句同等重要。
 
 查询DSL如下：
 
 ```java
-<property name="testDisMax" desc = "dis_max 最佳字段得分">
+<property name="testDisMax" desc="dis_max 最佳字段得分测试">
         <![CDATA[
             {
               "explain": true,
               "query": {
                 "dis_max": {
-                  "tie_breaker": 0.5,
                   "queries": [
                     {
                       "term": {
-                        "content": "es"
+                        "content": #[content1]
                       }
                     },
                     {
                       "match": {
-                        "content": "相关度"
+                        "content": #[content2]
                       }
                     }
-                  ]
+                  ],
+                  "tie_breaker": #[tie_breaker]
                 }
               }
             }
@@ -1107,30 +1090,35 @@ bboss执行上述模板：
 
 ```java
 /**
-     * 测试dis_max 最佳字段得分
-     */
-    @Test
-    public void testDisMax() {
-        try {
-            clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+	 * dis_max 最佳字段得分测试
+	 */
+	@Test
+	public void testDisMax() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+			//查询参数
+			Map<String, Object> queryParamsMap = new HashMap<>();
+			queryParamsMap.put("content1", "es");
+			queryParamsMap.put("content2", "相关度");
+			queryParamsMap.put("tie_breaker", 0.5);
+			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+					"testDisMax",//DSL模板ID
+					queryParamsMap,//查询参数
+					MetaMap.class);//文档信息
 
-            ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
-                    "testDisMax",//DSL模板ID
-                    MetaMap.class);//文档信息
-
-            //ES返回结果遍历
-            metaMapESDatas.getDatas().forEach(metaMap -> {
-                logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
-                        SimpleStringUtil.object2json(metaMap.getExplanation())
-                );
-            });
-        } catch (ElasticSearchException e) {
-            logger.error("testSpanTermQuery 执行失败", e);
-        }
-    }
+			//ES返回结果遍历
+			metaMapESDatas.getDatas().forEach(metaMap -> {
+				logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+						SimpleStringUtil.object2json(metaMap.getExplanation())
+				);
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testDisMax 执行失败", e);
+		}
+	}
 ```
 
-返回结果如下,以得分最高的文档作为案例：
+返回结果如下,以排序第一 的文档为例：
 
 ```java
 文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
@@ -1167,30 +1155,464 @@ $$
 
 ### 4.2.4.boosting
 
-### 4.2.5.boolean query
+boosting：结果集字段权重评分。查询可以实现对文档结果集的二次权重打分，提升或者降低指定词元的相关度。
+
+**参数解释：**
+
+- positive：查询条件
+- negative：对positive查询结果进行相关度调整
+- negative_boost：调整参数，升权(>1), 降权(>0 and <1)，和negative相乘为最终得分。
+
+不同于boost，只是在搜索是设置权重，分数过低的文档会被丢弃，boosting仍会选择指定词元的文档，但可以修改其总体得分。
+
+查询DSL如下：
+
+```java
+ <property name="testBoosting" desc="boosting 结果集权重测试">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "boosting": {
+                  "positive": {
+                    "bool": {
+                      "should": [
+                        {
+                          "term": {
+                            "title": #[positive1]
+                          }
+                        },
+                        {
+                          "term": {
+                            "title": #[positive2]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "negative": {
+                    "term": {
+                      "content": #[negative]
+                    }
+                  },
+                  "negative_boost": #[boostNum]
+                }
+              }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+	/**
+	 * boosting 结果集权重测试
+	 */
+	@Test
+	public void testBoosting() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+			//查询参数
+			Map<String, Object> queryParmsMap = new HashMap<>();
+			queryParmsMap.put("positive1", "es");
+			queryParmsMap.put("positive2", "相关性");
+			queryParmsMap.put("negative", "编程");
+			queryParmsMap.put("boostNum", 0.2);
+			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+					"testBoosting",//DSL模板ID
+					queryParmsMap,//查询参数
+					MetaMap.class);//文档信息
+
+			//ES返回结果遍历
+			metaMapESDatas.getDatas().forEach(metaMap -> {
+				logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+						SimpleStringUtil.object2json(metaMap.getExplanation())
+				);
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testBoosting 执行失败", e);
+		}
+	}
+```
+
+返回结果如下,以包含negative词元的文档为例：
+
+```java
+文档_source:{author=bboss开源引擎, id=3, tag=[2, 3, 4], title=es, content=这是关于关于es和编程的必看文章, createAt=2020-05-22 10:56:00, influence={gte=12, lte=15}} 
+_explanation:
+{
+    "value" : 0.09808561352022904,
+    "description" : "weight(FunctionScoreQuery(title:es title:相关性, scored by boost(queryboost(score(content:编程))^0.2))), result of:",
+    "details" : [
+        {
+            "value" : 0.09808561352022904,
+            "description" : "product of:",
+            "details" : [
+                {
+                    "value" : 0.49042806,
+                    "description" : "sum of:",
+                    "details" : []
+                },
+                {
+                    "value" : 0.2,
+                    "description" : "Matched boosting query score(content:编程)",
+                    "details" : [ ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+boosting 计算公式：
+$$
+_score=positive*negative_boost
+$$
+结合boosting公式和_explanation详情，可以看出文档boosting查询的positive得分是0.49042806,由于命中了negative指定词元，总分变成0.49042806(positive)*0.2(negative_boost)。
+
+### 4.2.5.rescore
+
+rescore：结果集重新评分。先query，再在结果集基础上 rescore。query目前唯一支持的重新打分算法。参数window_size 是每一分片进行重新评分的顶部文档数量。
+
+rescore 和 上面的 Boosting Query 是比较相似的，都是在 query 结果集的基础上重新修改相关性得分。但是修改的算法是不一样的，根据场景需求，选择即可。
+
+**参数解释：**
+
+- window_size：需要重新打分的文档数，从返回的第一个文档开始计算。
+- query_weight：rescore以外query得分的权重。
+- rescore_query_weight：rescore得分的权重。
+
+查询DSL如下：
+
+```java
+ <property name="testRescore" desc="rescore 结果集重新打分">
+        <![CDATA[
+            {
+              "explain": true,
+              "query": {
+                "bool": {
+                  "should": [
+                    {
+                      "match": {
+                        "content": {
+                          "query": #[content]
+                        }
+                      }
+                    },
+                    {
+                      "match": {
+                        "title": {
+                          "query": #[title]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "rescore": {
+                "window_size": #[window_size],
+                "query": {
+                  "rescore_query": {
+                    "match_phrase": {
+                      "content": {
+                        "query": #[rescore_query],
+                        "slop": 50
+                      }
+                    }
+                  },
+                  "query_weight": #[query_weight],
+                  "rescore_query_weight": #[rescore_query_weight]
+                }
+              }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+/**
+	 * rescore 结果集重新打分
+	 */
+	@Test
+	public void testRescore() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");
+
+			//查询参数
+			Map<String, Object> queryParmsMap = new HashMap<>();
+			queryParmsMap.put("content", "es的相关度");
+			queryParmsMap.put("title", "es");
+			queryParmsMap.put("rescore_query", "es的相关度");
+			queryParmsMap.put("window_size", 2);
+			queryParmsMap.put("query_weight", 0.7);
+			queryParmsMap.put("rescore_query_weight", 1.2);
+			ESDatas<MetaMap> metaMapESDatas = clientInterface.searchList("explain_index/_search?search_type=dfs_query_then_fetch",
+					"testRescore",//DSL模板ID
+					queryParmsMap,//查询参数
+					MetaMap.class);//文档信息
+
+			//ES返回结果遍历
+			metaMapESDatas.getDatas().forEach(metaMap -> {
+				logger.info("\n文档_source:{} \n_explanation:\n{}", metaMap,
+						SimpleStringUtil.object2json(metaMap.getExplanation())
+				);
+			});
+		} catch (ElasticSearchException e) {
+			logger.error("testRescore 执行失败", e);
+		}
+	}
+```
+
+返回结果如下,以排序第一 的文档为例：
+
+```java
+文档_source:{author=bboss开源引擎, id=1, tag=[1, 2, 3], title=es的相关度, content=这是关于es的相关度的文章, createAt=2020-05-24 10:56:00, influence={gte=10, lte=12}} 
+_explanation:
+{
+    "value": 2.6571212,
+    "description": "sum of:",
+    "details": [
+        {
+            "value": 1.1348861,
+            "description": "product of:",
+            "details": [
+                {
+                    "value": 1.621266,
+                    "description": "sum of:",
+                    "details": []
+                },
+                {
+                    "value": 0.7,
+                    "description": "primaryWeight",
+                    "details": []
+                }
+            ]
+        },
+        {
+            "value": 1.522235,
+            "description": "product of:",
+            "details": [
+                {
+                    "value": 1.2685292,
+                    "description" : """weight(content:"es 的 相关 度"~50 in 0) [PerFieldSimilarity], result of:""",
+                    "details": []
+                },
+                {
+                    "value": 1.2,
+                    "description": "secondaryWeight",
+                    "details": []
+                }
+            ]
+        }
+    ]
+}
+```
+
+rescore 计算公式：
+$$
+_score=score(BM25)*query_weight+score(rescore)*rescore_query_weight
+$$
+结合rescore 公式和_explanation详情，我们就可以计算出文档总分。
+
+### 4.2.6.boolean query
 
 布尔查询可以参考ES社区的一篇文章[Bool query](http://mp.weixin.qq.com/s?__biz=MzIxMjE3NjYwOQ==&mid=2247483976&idx=1&sn=f9fc58f7f38ef79d4a652a9578ce1181&chksm=974b59c6a03cd0d036f9e1cc9d211b999c9d3acdd664f4a250a1573089fdfe747c7784191066&scene=21#wechat_redirect)
 
-## 4.3.rescore 结果集重新评分
+## 4.3.更改BM25 参数 k1 和 b 的值
 
-## 4.4.更改BM25 参数 k1 和 b 的值
+### 4.3.1.关于修改相关度
 
-# 5.被破坏的相关度
+在第二章节，我们知道了ES提供了几种文档相关度算法，ES也提供了修改相关度参数的API。
 
-## 5.1.现象示例
+在ES官方文档中对修改相关度参数称为`The rabbit hole`(兔子洞)，是一个无尽的循环，官方建议通过用户行为和搜索算法去优化搜索结果，而不是一味的修改相关度算法。
 
-## 5.2.两种方式解决
+### 4.3.2.BM25更改方法
 
-### 5.3.该现象不用深究
+在介绍BM25算法时，我们知道 k1 参数（默认值1.2）控制着词频结果在词频饱和度中的上升速度。b 参数（默认值0.75）控制着字段长归一值所起的作用。那么我们就可以通过手动定义这两个参数的值，从而去改变相关性算分。
 
-# 6.相关度控制最后要做的事情
+修改BM25，只能通过字段similarity属性指定自定义相关度实现。一般有两种实现方式：
+
+- 创建mapping时指定similarity为自定义相关度
+- 关闭索引，修改similarity为自定义相关度
+
+修改BM25DSL如下：
+
+```java
+<property name="setBM25" desc="设置BM25的参数">
+        <![CDATA[
+            {
+                "settings": {
+                    "similarity": {
+                      #[my_bm25]: {
+                        "type": "BM25",
+                        "k1": #[k1],
+                        "b": #[b]
+                      }
+                    }
+                },
+                "mappings": {
+                    "properties": {
+                      "title": {
+                        "type": "text",
+                        "similarity": #[my_bm25]
+                      },
+                      "body": {
+                        "type": "text",
+                        "similarity": "BM25"
+                      }
+                    }
+                }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+	/**
+	 * 设置BM25的参数
+	 */
+	@Test
+	public void setBM25() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
+			/*检查索引是否存在，存在就删除重建*/
+			if (clientInterface.existIndice("set_bm25_index")) {
+				clientInterface.dropIndice("set_bm25_index");
+			}
+			Map<String,Object> indexParms = new HashMap<>();
+			indexParms.put("my_bm25","my_bm25");
+			indexParms.put("k1",2);
+			indexParms.put("b",0);
+
+			clientInterface.createIndiceMapping("set_bm25_index", "setBM25",indexParms);
+			logger.info("创建索引 set_bm25_index 成功");
+		} catch (ElasticSearchException e) {
+			logger.error("创建索引 set_bm25_index 执行失败", e);
+		}
+	}
+```
+
+更改完相似度，就可以用explain查看BM25评分公司的改变。
+
+# 5.相关度不准的疑问
+
+## 5.1.被破坏的相关度
+
+每个分片都会根据该分片内的所有文档计算一个IDF评分。当数据量很少时，这会导致打分偏离。
+
+相关性算分的IDF 在分⽚之间是相互独⽴。当⽂档总数很少的情况下，主分⽚数越多 ，相关性算分会越不准。
+
+### 5.1.1.现象示例
+
+重建explain_index索引，修改分片数。
+
+**注意：**
+
+**副本可以通过关闭索引修改，但是分片数在索引创建后无法被修改，建立索引前一定要预估好数据量和分片的关系。**
+
+重建DSL如下：
+
+```java
+<property name="rebuildExplainIndex" desc="重建explain测试索引">
+        <![CDATA[
+            {
+              "settings": {
+                "index": {
+                  "number_of_shards": #[number_of_shards],
+                  "number_of_replicas": #[number_of_replicas]
+                }
+              },
+              "mappings": {
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "author": {
+                    "type": "keyword"
+                  },
+                  "title": {
+                    "type": "text",
+                    "analyzer": "ik_smart"
+                  },
+                  "content": {
+                    "type": "text",
+                    "analyzer": "ik_max_word",
+                    "search_analyzer": "ik_smart"
+                  },
+                  "tag": {
+                    "type": "keyword"
+                  },
+                  "influence": {
+                    "type": "integer_range"
+                  },
+                  "createAt": {
+                    "type": "date",
+                    "format": "yyyy-MM-dd HH:mm:ss"
+                  }
+                }
+              }
+            }
+        ]]>
+    </property>
+```
+
+bboss执行上述模板：
+
+```java
+/**
+	 * 重建explain测试索引
+	 */
+	@Test
+	public void rebuildExplainIndex() {
+		try {
+			clientInterface = bbossESStarter.getConfigRestClient("esmapper/doc_relevancy.xml");//bboss读取xml
+			/*检查索引是否存在，存在就删除重建*/
+			if (clientInterface.existIndice("explain_index")) {
+				clientInterface.dropIndice("explain_index");
+			}
+			Map<String, Object> indexParms = new HashMap<>();
+			indexParms.put("number_of_shards", 10);
+			indexParms.put("number_of_replicas", 2);
+
+			clientInterface.createIndiceMapping("explain_index", "rebuildExplainIndex", indexParms);
+			logger.info("重建索引 explain_index 成功");
+		} catch (ElasticSearchException e) {
+			logger.error("重建索引 explain_index 执行失败", e);
+		}
+	}
+```
+
+执行第三章节的导入测试数据，重新导入数据，再次执行第四章节的相关度控制测试用例，就能发现，新建索引10个分片的搜索结果和默认一个分片时的结果并不一致。
+
+### 5.1.2.两种方式解决
+
+- 当数据量不大时，将主分片数设置为1，这也是ES默认的配置
+- search_type：指定搜索方式。搜索的URL 中指定参数 `/_search?search_type=dfs_query_then_fetch`。在第四章节我们搜索的搜索用例都使用了这种方式。默认是`query then fetch`，可以自行度娘。
+
+在实际应用中，这并不是一个问题，本地和全局的IDF的差异会随着索引里文档数的增多渐渐消失，在生产环境，局部的 IDF 会被迅速均化，所以上述问题并不是相关度被破坏所导致的，而是由于数据太少。
+
+# 6.相关度搜索建议
 
 1. 理解评分过程是非常重要的，这样就可以根据具体的业务对评分结果进行调试、调节、减弱和定制。
 
-2. 本文介绍的4种相关度控制方案，建议结合实践，根据自己的业务需求，多动手调试练习。
+2. 本文介绍的3种相关度控制方案，建议结合实践，根据自己的业务需求，多动手调试练习。
 
 3. 最相关 这个概念是一个难以触及的模糊目标，通常不同人对文档排序又有着不同的想法，这很容易使人陷入持续反复调整而没有明显进展的怪圈。**强烈建议不要去追求最相关，而要监控测量搜索结果。**
 
 4. **评价搜索结果与用户之间相关程度的指标。**如果查询能返回高相关的文档，用户会选择前五中的一个，得到想要的结果，然后离开。不相关的结果会让用户来回点击并尝试新的搜索条件。
 
-5. 要想物尽其用并将搜索结果提高到 *极高的* 水平，唯一途径就是需要具备能评价度量用户行为的强大能力。
+5. 要想物尽其用并将搜索结果提高到极高的水平，唯一途径就是需要具备能评价度量用户行为的强大能力。
+
+# 7.开发交流
+
+bboss elasticsearch交流：166471282
+
+**bboss elasticsearch微信公众号：**
+
+<img src="https://static.oschina.net/uploads/space/2017/0617/094201_QhWs_94045.jpg"  height="200" width="200">

@@ -2,21 +2,44 @@
 
 在使用Elasticsearch进行全文搜索时，搜索结果默认会以文档的相关度进行排序，如果想要改变默认的排序规则，也可以通过**sort**指定一个或多个排序字段。但是使用sort排序过于绝对，它会直接忽略掉文档本身的相关度（根本不会去计算）。在很多业务场景下这样做的效果并不好，这时候就需要对多个字段进行综合评估，得出一个最终的排序。
 
-本文涉及到的程序和配置文件对应的完整可运行的java工程源码地址：
+# 前言
 
-[https://github.com/rookieygl/bboss-wiki](https://github.com/rookieygl/bboss-wiki)
+案例源码工程:
+
+https://github.com/rookieygl/bboss-wiki
+
+本案例以Elasticsearch开源java rest client客户端bboss开发：
+
+https://esdoc.bbossgroups.com/#/README
 
 # 1.function_score介绍
 
-在Elasticsearch中function_score是用于处理文档分值的 DSL，它会在查询结束后对每一个匹配的文档进行一系列的重打分操作，最后以生成的最终分数进行排序。它提供了几种默认的计算分值的函数：
+在Elasticsearch中function_score是用于处理文档分值的 DSL，它会在查询结束后对每一个匹配的文档进行一系列的重打分操作，最后以生成的最终分数进行排序。
+
+## 1.1.评分函数
 
 - weight：设置权重
 - field_value_factor：将某个字段的值进行计算得出分数。
 - random_score：随机得到 0 到 1 分数
-- 衰减函数（decay functions）：同样以某个字段的值为标准，距离某个值越近得分越高
+- decay functions（衰减函数）：同样以某个字段的值为标准，距离某个值越近得分越高
 - script_score：通过自定义脚本计算分值，可引入脚本，传入参数等
 
-function_score通过属性`boost_mode`可以指定计算后的分数与原始的`_score`如何合并，有以下选项：
+## 1.2.score_mode
+
+score_mode：函数得分组合方式
+
+我们需要把多个函数得到的分数合并成一个总分数，作为function_score的总分。有以下选项：
+
+- multiply: 函数结果会相乘(默认行为)
+- sum：函数结果会累加
+- avg：得到所有函数结果的平均值
+- max：得到最大的函数结果
+- min：得到最小的函数结果
+- first：只使用第一个函数的结果，该函数可以有过滤器，也可以没有
+
+## 1.3.boost_mode
+
+boost_mode：函数打分和函数外部评分结果的组合方式，有以下选项：
 
 - multiply：将结果乘以_score
 
@@ -28,35 +51,24 @@ function_score通过属性`boost_mode`可以指定计算后的分数与原始的
 
 - replace：使结果替换掉_score
 
-function_score通过属性score_mode每一个函数都会给文档一个评分，因此我们需要把这些函数返回的分数归约成一个总分数，然后和_score组合成一个新的最终分数。该参数score_mode指定函数得分的组合方式：
+## 1.4.分数限制
 
-- multiply: 函数结果会相乘(默认行为)
-- sum：函数结果会累加
+当function_score中某个函数可能会超过我们的预期时，可以通过下面两个参数对文档进行限制。
 
-- avg：得到所有函数结果的平均值
+- max_boost：functions内部单个函数查询的最大分，不影响文档评分，但是超过这个最大分文档将被丢弃。默认值为FLT_MAX，可认为无限制
 
-- max：得到最大的函数结果
-
-- min：得到最小的函数结果
-
-- first：只使用第一个函数的结果，该函数可以有过滤器，也可以没有
-
-function_score通过设置max_boost参数，可以将分数限制为不超过某个值，限制该函数的最大影响 力，当然max_boost只是对函数的结果有所限制，并不是最终的_score。默认max_boost值为FLT_MAX（结果的最大浮点数，即为无限制）。
-
-min_score：默认情况下，修改分数不影响文档的匹配。要排除不符合指定分数的文档，function_score通过min_score可以将参数设置为所需最低分数；当然要对查询返回的所有文档进行评分，然后逐个判断过滤。
+- min_score：同上，小于这个分值的文档将被丢弃。默认无效
 
 **注**
 
-​	**max_boost是对每个函数都进行限制。**
+​	**这两个参数都是是对单个函数都进行限制。而不是对function_score总分限制**
 
+## 1.5.注意事项
 
+1. function_score如果没有给函数设置过滤器或者query条件，这相当于指定 `"match_all": {}`。
 
-function_score的作用就是综合各个函数的得分，因此注意两点：
-
-1. **function_score如果没有给函数设置过滤器或者query条件，这相当于指定 `"match_all": {}`。**
-
-2. **每个函数产生的分数不决定排名，因为我们只要最终得分，总分数越高，排名越靠前。**
-3.  **sort排序不参与评分，导致function_score无效，谨慎结合使用。**
+2. 每个函数产生的分数不直接决定排名，因为我们只要最终得分，总分数越高，排名越靠前。
+3.  sort、filter等无评分搜索，可能导致导致function_score无效，谨慎结合使用。
 
 接下来本文将举例详细介绍这些函数的用法，以及它们的使用场景。
 
@@ -208,7 +220,7 @@ bboss执行上述模板：
 ## 2.2 weight
 
 weight 的用法最为简单，只需要设置一个数字作为权重，文档的分数就会乘以该权重。
-他最大的用途应该就是和过滤器一起使用了，因为过滤器只会筛选出符合标准的文档，而不会去详细的计算每个文档的具体得分，所以只要满足条件的文档的分数都是 1，而 weight 可以将其更换为你想要的数值。
+他最大的用途应该就是和过滤器一起使用了，因为过滤器只会筛选出符合标准的文档，而不会去详细的计算每个文档的具体得分，所以只要满足条件的文档的分数都是 1，而weight可以提升关键字段的权重。
 
 ## 2.3 field\_value\_factor
 
@@ -913,17 +925,17 @@ bboss执行上述模板：
 
 # 3.相关资料
 
+Function Score官方文档
+
 https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html
+
+bboss dsl配置规范
 
 https://esdoc.bbossgroups.com/#/development?id=_53-dsl%E9%85%8D%E7%BD%AE%E8%A7%84%E8%8C%83
 
-评分相似文档
+Function Score评分相似文档
 
 https://blog.csdn.net/wwd0501/article/details/78652850?tdsourcetag=s_pcqq_aiomsg
-
-设置search_type
-
-https://esdoc.bbossgroups.com/#/development?id=_49-%E6%8C%87%E5%AE%9A%E6%A3%80%E7%B4%A2search_type%E5%8F%82%E6%95%B0
 
 # 4.开发交流
 
