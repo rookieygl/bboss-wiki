@@ -1,13 +1,4 @@
 version: '3'
-#服务配置
-#volumes:
-#  es_master:
-#    driver: local
-#  es_node1:
-#    driver: local
-networks:
-  es7net:
-#    driver: bridge
 services:
   kibana:
     image: kibana:7.1.0
@@ -16,15 +7,15 @@ services:
     privileged: true
     environment:
       - server_name=kibana
-      #      - server.host=0.0.0.0
-      #      - server.port=5601
+      - server.host=0.0.0.0
+      - server.port=5601
       - elasticsearch.hosts=http://elasticsearch:9200
       - elasticsearch_url=http://elasticsearch:9200
       # xpack
       - xpack_graph_enabled=true
-#      - xpack.monitoring.ui.container.elasticsearch.enabled=false
+      #- xpack.monitoring.ui.container.elasticsearch.enabled=false
       - timelion_enabled=true
-#      ## kibana监控
+      ## kibana监控
       - xpack_monitoring_collection_enabled=true
     ports:
       - 5601:5601
@@ -132,3 +123,12 @@ services:
       - -Dhosts.0.host=http://es_master:9200
     networks:
       - es7net
+#服务配置
+volumes:
+  es_master:
+    driver: local #默认值
+  es_node1:
+    driver: local
+networks:
+  es7net:
+    driver: bridge #默认值

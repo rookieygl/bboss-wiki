@@ -1,36 +1,23 @@
 version: '2.2'
 services:
-  cerebro:
-    image: lmenezes/cerebro:0.8.4
-    container_name: cerebro
-    ports:
-      - 9000:9000
-    command:
-      - -Dhosts.0.host=http://elasticsearch:9202
-    networks:
-      - es7net
   kibana:
     image: kibana:7.6.2
     container_name: sin_kibana
     environment:
-#      - SERVER.PORT=5602
-#      - elasticsearch.hosts=http://elasticsearch:9201
-#      - ELASTICSEARCH_URL=http://elasticsearch:9202
+      - SERVER.PORT=5601
       - XPACK.MONITORING.UI.CONTAINER.ELASTICSEARCH.ENABLED=false
       - elasticsearch.ssl.verify=false
       - XPACK_GRAPH_ENABLED=false
       - xpack_monitoring_collection_enabled=true
       - timelion_enabled=false
     ports:
-      - 5602:5602
+      - 5601:5601
     networks:
       - es7net
   elasticsearch:
     image: elasticsearch:7.6.2
     container_name: single_es
     hostname: single_es
-    extra_hosts:
-      - "es_node1.yml:192.168.147.102"
     environment:
       - cluster.name=elastic
       - node.name=single_es
@@ -43,7 +30,7 @@ services:
       - http.cors.allow-origin=*
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - discovery.seed_hosts=single_es
-#      - network.publish_host=elasticsearch
+      - network.publish_host=elasticsearch
       - cluster.initial_master_nodes=single_es
       - xpack.security.enabled=false
       - xpack.monitoring.collection.enabled=true
@@ -52,17 +39,29 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - s/data:/usr/share/elasticsearch/data
+      - /data:/usr/share/elasticsearch/data
       - /data/es/single_es/logs:/usr/share/elasticsearch/logs
     ports:
       # 对外只需开放9200
       - 9202:9202
     networks:
       - es7net
+  # 类似es_head的es管理工具
+  cerebro:
+    image: lmenezes/cerebro:0.8.4
+    container_name: cerebro
+    ports:
+      - 9000:9000
+    command:
+      - -Dhosts.0.host=http://elasticsearch:9202
+    networks:
+      - es7net
+
+# 服务配置
 volumes:
   esdata:
-    driver: local
+    driver: local #默认值
 
 networks:
   es7net:
-    driver: bridge
+    driver: bridge #默认值
