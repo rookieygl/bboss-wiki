@@ -1,7 +1,6 @@
-package com.ygl.DocRelevancy;
+package com.ygl.dsldo;
 
 import com.frameworkset.util.SimpleStringUtil;
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.boot.BBossESStarter;

@@ -1,4 +1,4 @@
-package com.ygl.FieldCollapsing;
+package com.ygl.dsldo;
 
 import com.ygl.po.RecipesPo;
 import org.frameworkset.elasticsearch.ElasticSearchException;

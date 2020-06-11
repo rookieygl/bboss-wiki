@@ -1,4 +1,4 @@
-package com.ygl.SpanQuery;
+package com.ygl.dsldo;
 
 import org.frameworkset.elasticsearch.ElasticSearchException;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;

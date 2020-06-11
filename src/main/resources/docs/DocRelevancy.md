@@ -18,7 +18,9 @@ https://github.com/rookieygl/bboss-wiki
 
 https://esdoc.bbossgroups.com/#/README
 
-开始之前要先创建DSL的配置文件，位置在案例工程[resources/esmapper/doc_relevancy.xml](https://github.com/rookieygl/bboss-wiki/blob/master/src/main/resources/esmapper/doc_relevancy.xml)。本文涉及到的DSL都会放到该配置文件。
+本案例以Elasticsearch6.8.9版本，bboss6.1.5单元测试时，建议版本选择不要太低
+
+DSL的配置文件[resources/esmapper/doc_relevancy.xml](https://github.com/rookieygl/bboss-wiki/blob/master/src/main/resources/esmapper/doc_relevancy.xml)，本文涉及到的DSL都会放到该配置文件，本案例测试代码[DocRelevancy](https://github.com/rookieygl/bboss-wiki/blob/master/src/test/java/com/ygl/DocRelevancy/DocRelevancy.java)。
 
 # 1.文档相关性
 
